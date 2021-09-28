@@ -13,11 +13,8 @@ from collections import Counter
 # pip install matplotlib
 # pip install requests
 
-import menu
-
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
-
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
@@ -58,6 +55,10 @@ def useFiles():
 
         print("Zly vstup, zadaj znova..")
 
+
+def ramec_info(ramec, ramec_number):
+    pass
+
 def main():
 
     # odchytenie vystupu do variable
@@ -69,6 +70,26 @@ def main():
     while pcap_file_for_use != None:
 
         print("Actual file: " + pcap_file_for_use)
+
+        # open and read the pcap file
+        ramce = None
+        try:
+            f = open(pcap_file_for_use, "rb")
+        except FileNotFoundError:
+            print("File does not exist")
+        else:
+            ramce = rdpcap(f)
+
+        # ak mam nacitane ramce z pcap file
+        if(ramce != None):
+
+            i = 1
+
+            for ramec in ramce:
+                ramec_number = i
+                ramec_info(ramec, ramec_number)
+                i += 1
+
 
         pcap_file_for_use = useFiles()
 
