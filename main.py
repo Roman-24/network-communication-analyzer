@@ -13,6 +13,8 @@ from collections import Counter
 # pip install matplotlib
 # pip install requests
 
+import menu
+
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
@@ -33,6 +35,7 @@ def useFiles():
     for iterator, line in enumerate(pcap_files_paths, 1):
         print("{:03}: {}".format(iterator, line), end="")
 
+    action_from_menu = menu(pcap_files_paths)
 
 def main():
 
