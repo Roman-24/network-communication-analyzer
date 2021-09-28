@@ -35,21 +35,42 @@ def useFiles():
     for iterator, line in enumerate(pcap_files_paths, 1):
         print("{:03}: {}".format(iterator, line), end="")
 
-    action_from_menu = menu(pcap_files_paths)
+    while True:
+        print("Pre ukoncenie programu napis: e")
+        print("Pre vlastnu cestu k suboru zadaj: 0")
+        print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths)} ")
+
+        user_input = input()
+
+        if (user_input == "e"):
+            print("Exit..")
+            exit()
+
+        user_input = int(user_input)
+
+        if (user_input == 0):
+            print("Zadaj relativnu cestu k suboru: ")
+            user_path = input()
+            return os.path.join(os.path.dirname(__file__), user_path)
+
+        if (user_input > 0 and user_input < len(pcap_files_paths)):
+            return os.path.join(os.path.dirname(__file__), (pcap_files_paths[user_input - 1])[:-1])
+
+        print("Zly vstup, zadaj znova..")
 
 def main():
 
     # odchytenie vystupu do variable
     origOutput = sys.stdout
 
-    filename = useFiles()
+    pcap_file_for_use = useFiles()
 
     # main loop
-    while filename != None:
+    while pcap_file_for_use != None:
 
-        print("actual file: " + filename)
+        print("Actual file: " + pcap_file_for_use)
 
-        filename = useFiles()
+        pcap_file_for_use = useFiles()
 
 
 if __name__ == '__main__':
