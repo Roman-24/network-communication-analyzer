@@ -43,7 +43,7 @@ def useFiles():
             print("Exit..")
             exit()
 
-        user_input = int(user_input)
+        user_input = int(user_input) # sem ešte treba ošetriť trycache
 
         if (user_input == 0):
             print("Zadaj relativnu cestu k suboru: ")
@@ -62,10 +62,41 @@ def useFiles():
 def analyze_bajty(ramec):
     return raw(ramec).hex()
 
+# uloha 1b
+def print_ramec_len(raw_ramec):
+    len_of_raw_ramec = len(raw_ramec)/2
+    print('dĺžka rámca poskytnutá pcap API - %d %s' % (len_of_raw_ramec, 'B'))
+
+    if (len_of_raw_ramec <=60):
+        print("dĺžka rámca prenášaného po médiu – 64 B")
+    else:
+        print('dĺžka rámca prenášaného po médiu – %d %s' % ((len_of_raw_ramec+4), 'B'))
+
+    pass
+
+# uloha 1c
+def print_ramec_type(raw_ramec):
+
+    print("Typ rámca: ", end="")
+
+    if raw_ramec[12] < "0x06":
+        if raw_ramec[14] == "0xFF":
+            print("Novell 802.3 RAW")
+        elif raw_ramec[14] == "0xAA":
+            print("IEEE 802.3 LLC + SNAP")
+        else:
+            print("IEEE 802.3 LLC")
+    else:
+        print("Ethernet II")
+
+    pass
+
 def ramec_info(ramec, ramec_number):
     print(f"poradie ramca: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
-    print(raw_ramec)
+    # print(raw_ramec)
+    print_ramec_len(raw_ramec)
+    print_ramec_type(raw_ramec)
     pass
 
 def main():
