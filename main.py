@@ -55,8 +55,17 @@ def useFiles():
 
         print("Zly vstup, zadaj znova..")
 
+'''
+***** Funkcie pre analýzu a rozbor komunikácie *****
+'''
+
+def analyze_bajty(ramec):
+    return raw(ramec).hex()
 
 def ramec_info(ramec, ramec_number):
+    print(f"poradie ramca: {ramec_number}")
+    raw_ramec = analyze_bajty(ramec)
+    print(raw_ramec)
     pass
 
 def main():
