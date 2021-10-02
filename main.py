@@ -35,7 +35,7 @@ def useFiles():
     while True:
         print("Pre ukoncenie programu napis: e")
         print("Pre vlastnu cestu k suboru zadaj: 0")
-        print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths)} ")
+        print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths) - 1}(vratane)")
 
         user_input = input()
 
@@ -60,17 +60,21 @@ def useFiles():
 '''
 
 def analyze_bajty(ramec):
-    return raw(ramec).hex()
+    return raw(ramec)
 
 # uloha 1b
 def print_ramec_len(raw_ramec):
-    len_of_raw_ramec = len(raw_ramec)/2
-    print('dĺžka rámca poskytnutá pcap API - %d %s' % (len_of_raw_ramec, 'B'))
 
-    if (len_of_raw_ramec <=60):
-        print("dĺžka rámca prenášaného po médiu – 64 B")
+    len_of_raw_ramec = len(raw_ramec)
+
+    print(f"dĺžka rámca poskytnutá pcap API - {len_of_raw_ramec} B")
+
+    if (len_of_raw_ramec <= 60):
+        len_of_raw_ramec = 64
     else:
-        print('dĺžka rámca prenášaného po médiu – %d %s' % ((len_of_raw_ramec+4), 'B'))
+        len_of_raw_ramec += 4
+
+    print(f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec} B")
 
     pass
 
@@ -79,10 +83,10 @@ def print_ramec_type(raw_ramec):
 
     print("Typ rámca: ", end="")
 
-    if raw_ramec[12] < "0x06":
-        if raw_ramec[14] == "0xFF":
+    if raw_ramec[12] < 0x06:
+        if raw_ramec[14] == 0xFF:
             print("Novell 802.3 RAW")
-        elif raw_ramec[14] == "0xAA":
+        elif raw_ramec[14] == 0xAA:
             print("IEEE 802.3 LLC + SNAP")
         else:
             print("IEEE 802.3 LLC")
@@ -114,11 +118,9 @@ def main():
         # open and read the pcap file
         ramce = None
         try:
-            f = open(pcap_file_for_use, "rb")
-        except FileNotFoundError:
-            print("File does not exist")
-        else:
-            ramce = rdpcap(f)
+            ramce = rdpcap(pcap_file_for_use)
+        except Exception as err:
+            print(err)
 
         # ak mam nacitane ramce z pcap file
         if(ramce != None):
