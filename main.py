@@ -177,8 +177,9 @@ def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 
 # potebne k ulohe 3, uloha 3
 def find_IP(raw_ramec):
-    destination_ip = str(int(raw_ramec[30:31], 16)) + "." + str(int(raw_ramec[31:32], 16)) + "." + str(int(raw_ramec[32:33], 16)) + "." + str(int(raw_ramec[33:34], 16))
-    source_ip = str(int(raw_ramec[26:27], 16)) + "." + str(int(raw_ramec[27:28], 16)) + "." + str(int(raw_ramec[28:29], 16)) + "." + str(int(raw_ramec[29:30], 16))
+    raw_ramec = raw_ramec.hex()
+    destination_ip = str(int(raw_ramec[30 * 2:31 * 2], 16)) + "." + str(int(raw_ramec[31 * 2:32 * 2], 16)) + "." + str(int(raw_ramec[32 * 2:33 * 2], 16)) + "." + str(int(raw_ramec[33 * 2:34 * 2], 16))
+    source_ip = str(int(raw_ramec[26 * 2:27 * 2], 16)) + "." + str(int(raw_ramec[27 * 2:28 * 2], 16)) + "." + str(int(raw_ramec[28 * 2:29 * 2], 16)) + "." + str(int(raw_ramec[29 * 2:30 * 2], 16))
     return source_ip, destination_ip
 
 
