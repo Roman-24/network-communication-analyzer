@@ -85,13 +85,16 @@ def print_ramec_type(raw_ramec):
 
     if raw_ramec[12] < 0x06:
         if raw_ramec[14] == 0xFF:
-            print("Novell 802.3 RAW")
+            remec_type = "Novell 802.3 RAW"
         elif raw_ramec[14] == 0xAA:
-            print("IEEE 802.3 LLC + SNAP")
+            remec_type = "IEEE 802.3 LLC + SNAP"
         else:
-            print("IEEE 802.3 LLC")
+            remec_type = "IEEE 802.3 LLC"
     else:
-        print("Ethernet II")
+        remec_type = "Ethernet II"
+
+    print(remec_type)
+    return remec_type
     pass
 
 # uloha 1d
@@ -101,7 +104,8 @@ def print_MAC_address(raw_ramec):
     print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
 
 # uloha 2
-def find_nested_protocol(raw_ramec):
+# def find_nested_protocol(raw_ramec):
+def creat_protocols_dict():
 
     protocol_dict = {} # create a Dictionary
     with open(PROTOCOLS_LIST, 'r') as protocol_file:
@@ -115,25 +119,78 @@ def find_nested_protocol(raw_ramec):
             else:
                 key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
                 protocol_dict[protocol_name, int(key, 16)] = value[:-1]
+                # protocol_dict[protocol_name, key] = value[:-1]
+        return protocol_dict
 
-    print(protocol_dict)
+'''
+    protocol_from_ramec = raw_ramec[(12 * 2):(14 * 2)].hex()
+
+    with open(PROTOCOLS_LIST, 'r') as protocol_file:
+        while True:
+            line = protocol_file.readline()
+
+            if line.startswith("#"):
+                continue
+            elif not line:
+                break
+            else:
+                protocol_key, protocol_name = line.split(" ", 1)
+                protocol_name = protocol_name[:-1]
+                if protocol_key == protocol_from_ramec:
+                    print(protocol_name.rstrip())
     pass
+'''
+def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
+
+    nested_protocol = ""
+
+    if ramec_type == "Novell 802.3 RAW":
+        nested_protocol = "IPX"
+
+    elif ramec_type == "IEEE 802.3 LLC + SNAP":
+        num2021 = 256 * raw_ramec[20] + raw_ramec[21]
+        try:
+            nested_protocol = protocols_dict['Ethertypes', num2021]
+        except KeyError:
+            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num2021)
+
+    elif ramec_type == "IEEE 802.3 LLC":
+        try:
+            # nested_protocol += "DSAP "
+            nested_protocol = protocols_dict['SAPs', raw_ramec[14]]
+            # nested_protocol += "SSAP "
+            nested_protocol += protocols_dict['SAPs', raw_ramec[15]]
+        except KeyError:
+            nested_protocol = "Neznámy SAP 0x{:02x}".format(raw_ramec[14])
+
+    # Ethernet II
+    else:
+        num1213 = 256 * raw_ramec[12] + raw_ramec[13]
+        try:
+            nested_protocol = protocols_dict['Ethertypes', num1213]
+        except KeyError:
+            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num1213)
+
+    return nested_protocol
 
 # vypisky k ulohe 1
 def ramec_info(ramec, ramec_number):
+
     print(f"rámec: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
-    # print(raw_ramec)
-    print_ramec_len(raw_ramec)
-    print_ramec_type(raw_ramec)
-    print_MAC_address(raw_ramec)
 
-    # sem este vypis protocolu
-    # IPv4, ARP, DTP, IPv6
-    protocol = find_nested_protocol(raw_ramec)
+    # print_ramec_len(raw_ramec)
+
+    ramec_type = print_ramec_type(raw_ramec)
+
+    # print_MAC_address(raw_ramec)
+
+    # vnoreny protokol
+    protocols_dict = creat_protocols_dict()
+    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
     print(protocol)
 
-    hexdump(raw_ramec)
+    # hexdump(raw_ramec)
     print("\n", end="")
     pass
 
