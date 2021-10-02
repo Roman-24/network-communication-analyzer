@@ -13,6 +13,7 @@ from collections import Counter
 # pip install matplotlib
 # pip install requests
 
+# konstanty pre subory
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
@@ -99,8 +100,26 @@ def print_MAC_address(raw_ramec):
     print("Zdrojová MAC adresa: " + raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24])
     print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
 
+# uloha 2
+def find_nested_protocol(raw_ramec):
 
+    protocol_dict = {} # create a Dictionary
+    with open(PROTOCOLS_LIST, 'r') as protocol_file:
+        while True:
+            line = protocol_file.readline()
 
+            if line.startswith("#"):
+                protocol_name = line.split()[0][1:]
+            elif not line:
+                break
+            else:
+                key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
+                protocol_dict[protocol_name, int(key, 16)] = value[:-1]
+
+    print(protocol_dict)
+    pass
+
+# vypisky k ulohe 1
 def ramec_info(ramec, ramec_number):
     print(f"rámec: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
@@ -108,9 +127,14 @@ def ramec_info(ramec, ramec_number):
     print_ramec_len(raw_ramec)
     print_ramec_type(raw_ramec)
     print_MAC_address(raw_ramec)
+
+    # sem este vypis protocolu
+    # IPv4, ARP, DTP, IPv6
+    protocol = find_nested_protocol(raw_ramec)
+    print(protocol)
+
     hexdump(raw_ramec)
     print("\n", end="")
-    # sem este vypis protocolu
     pass
 
 def main():
