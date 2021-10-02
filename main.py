@@ -208,6 +208,7 @@ def ramec_info2(ramec, ramec_number):
     print_ramec_len(raw_ramec)
 
     ramec_type = analyze_ramec_type(raw_ramec)
+    print(ramec_type)
 
     print_MAC_address(raw_ramec)
 
@@ -229,6 +230,7 @@ def ramec_info3(ramec, ramec_number):
     print_ramec_len(raw_ramec)
 
     ramec_type = analyze_ramec_type(raw_ramec)
+    print(ramec_type)
 
     print_MAC_address(raw_ramec)
 
@@ -238,7 +240,9 @@ def ramec_info3(ramec, ramec_number):
     print(protocol)
 
     # IPcky
-    
+    source_ip, destination_ip = find_IP(raw_ramec)
+    print(f"zdrojová IP adresa: {source_ip}")
+    print(f"cieľová IP adresa: {destination_ip}")
 
     # hexdump(raw_ramec)
     print("\n", end="")
@@ -270,7 +274,7 @@ def main():
 
             for ramec in ramce:
                 ramec_number = i
-                ramec_info(ramec, ramec_number)
+                ramec_info3(ramec, ramec_number)
                 i += 1
 
 
