@@ -44,7 +44,7 @@ def useFiles():
             print("Exit..")
             exit()
 
-        user_input = int(user_input) # sem ešte treba ošetriť trycache
+        user_input = int(user_input) # sem este treba osetrit trycache
 
         if (user_input == 0):
             print("Zadaj relativnu cestu k suboru: ")
@@ -104,7 +104,6 @@ def print_MAC_address(raw_ramec):
     print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
 
 # uloha 2
-# def find_nested_protocol(raw_ramec):
 def creat_protocols_dict():
 
     protocol_dict = {} # create a Dictionary
@@ -179,18 +178,18 @@ def ramec_info(ramec, ramec_number):
     print(f"rámec: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
 
-    # print_ramec_len(raw_ramec)
+    print_ramec_len(raw_ramec)
 
     ramec_type = print_ramec_type(raw_ramec)
 
-    # print_MAC_address(raw_ramec)
+    print_MAC_address(raw_ramec)
 
     # vnoreny protokol
     protocols_dict = creat_protocols_dict()
     protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
     print(protocol)
 
-    # hexdump(raw_ramec)
+    hexdump(raw_ramec)
     print("\n", end="")
     pass
 
