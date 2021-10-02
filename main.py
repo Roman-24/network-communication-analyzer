@@ -79,7 +79,7 @@ def print_ramec_len(raw_ramec):
     pass
 
 # uloha 1c
-def print_ramec_type(raw_ramec):
+def analyze_ramec_type(raw_ramec):
 
     print("Typ rámca: ", end="")
 
@@ -93,7 +93,6 @@ def print_ramec_type(raw_ramec):
     else:
         remec_type = "Ethernet II"
 
-    print(remec_type)
     return remec_type
     pass
 
@@ -103,7 +102,8 @@ def print_MAC_address(raw_ramec):
     print("Zdrojová MAC adresa: " + raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24])
     print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
 
-# uloha 2
+
+# potrebne pre ulohu 2
 def creat_protocols_dict():
 
     protocol_dict = {} # create a Dictionary
@@ -122,7 +122,7 @@ def creat_protocols_dict():
         return protocol_dict
 
 '''
-    protocol_from_ramec = raw_ramec[(12 * 2):(14 * 2)].hex()
+    protocol_from_ramec = raw_ramec[(12):(14)].hex()
 
     with open(PROTOCOLS_LIST, 'r') as protocol_file:
         while True:
@@ -139,6 +139,8 @@ def creat_protocols_dict():
                     print(protocol_name.rstrip())
     pass
 '''
+
+# uloha 2
 def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 
     nested_protocol = ""
@@ -172,6 +174,14 @@ def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 
     return nested_protocol
 
+
+# potebne k ulohe 3, uloha 3
+def find_IP(raw_ramec):
+    destination_ip = str(int(raw_ramec[30:31], 16)) + "." + str(int(raw_ramec[31:32], 16)) + "." + str(int(raw_ramec[32:33], 16)) + "." + str(int(raw_ramec[33:34], 16))
+    source_ip = str(int(raw_ramec[26:27], 16)) + "." + str(int(raw_ramec[27:28], 16)) + "." + str(int(raw_ramec[28:29], 16)) + "." + str(int(raw_ramec[29:30], 16))
+    return source_ip, destination_ip
+
+
 # vypisky k ulohe 1
 def ramec_info(ramec, ramec_number):
 
@@ -180,7 +190,24 @@ def ramec_info(ramec, ramec_number):
 
     print_ramec_len(raw_ramec)
 
-    ramec_type = print_ramec_type(raw_ramec)
+    ramec_type = analyze_ramec_type(raw_ramec)
+    print(ramec_type)
+
+    print_MAC_address(raw_ramec)
+
+    hexdump(raw_ramec)
+    print("\n", end="")
+    pass
+
+# vypisky k ulohe 2
+def ramec_info2(ramec, ramec_number):
+
+    print(f"rámec: {ramec_number}")
+    raw_ramec = analyze_bajty(ramec)
+
+    print_ramec_len(raw_ramec)
+
+    ramec_type = analyze_ramec_type(raw_ramec)
 
     print_MAC_address(raw_ramec)
 
@@ -190,6 +217,30 @@ def ramec_info(ramec, ramec_number):
     print(protocol)
 
     hexdump(raw_ramec)
+    print("\n", end="")
+    pass
+
+# vypisky k ulohe 3
+def ramec_info3(ramec, ramec_number):
+
+    print(f"rámec: {ramec_number}")
+    raw_ramec = analyze_bajty(ramec)
+
+    print_ramec_len(raw_ramec)
+
+    ramec_type = analyze_ramec_type(raw_ramec)
+
+    print_MAC_address(raw_ramec)
+
+    # vnoreny protokol
+    protocols_dict = creat_protocols_dict()
+    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
+    print(protocol)
+
+    # IPcky
+    
+
+    # hexdump(raw_ramec)
     print("\n", end="")
     pass
 
