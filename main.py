@@ -75,7 +75,6 @@ def print_ramec_len(raw_ramec):
         len_of_raw_ramec += 4
 
     print(f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec} B")
-
     pass
 
 # uloha 1c
@@ -92,8 +91,28 @@ def print_ramec_type(raw_ramec):
             print("IEEE 802.3 LLC")
     else:
         print("Ethernet II")
-
     pass
+
+# uloha 1d
+def print_MAC_address(raw_ramec):
+    raw_ramec = raw_ramec.hex()
+    # print("Zdrojová MAC adresa: " + raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24])
+    # print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
+
+    temp = ""
+    i = 0
+    for _ in range(0, 6):
+        temp += raw_ramec[i+12:i+14] + ":"
+        i += 2
+    print("Zdrojová MAC adresa: " + temp)
+
+    temp = ""
+    i = 0
+    for _ in range(0, 6):
+        temp += raw_ramec[i+0:i+2] + ":"
+        i += 2
+    print("Zdrojová MAC adresa: " + temp)
+
 
 def ramec_info(ramec, ramec_number):
     print(f"poradie ramca: {ramec_number}")
@@ -101,6 +120,8 @@ def ramec_info(ramec, ramec_number):
     # print(raw_ramec)
     print_ramec_len(raw_ramec)
     print_ramec_type(raw_ramec)
+    print_MAC_address(raw_ramec)
+    # sem este vypis protocolu
     pass
 
 def main():
