@@ -85,15 +85,15 @@ def analyze_ramec_type(raw_ramec):
 
     if raw_ramec[12] < 0x06:
         if raw_ramec[14] == 0xFF:
-            remec_type = "Novell 802.3 RAW"
+            ramec_type = "Novell 802.3 RAW"
         elif raw_ramec[14] == 0xAA:
-            remec_type = "IEEE 802.3 LLC + SNAP"
+            ramec_type = "IEEE 802.3 LLC + SNAP"
         else:
-            remec_type = "IEEE 802.3 LLC"
+            ramec_type = "IEEE 802.3 LLC"
     else:
-        remec_type = "Ethernet II"
+        ramec_type = "Ethernet II"
 
-    return remec_type
+    return ramec_type
     pass
 
 # uloha 1d
@@ -140,7 +140,7 @@ def creat_protocols_dict():
     pass
 '''
 
-# uloha 2
+# k ulohe 2
 def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 
     nested_protocol = ""
@@ -252,13 +252,106 @@ def ramec_info3(ramec, ramec_number):
             elif ip_counter[source_ip] > 0:
                 ip_counter[source_ip] += 1
 
-
         print(f"zdrojová IP adresa: {source_ip}")
         print(f"cieľová IP adresa: {destination_ip}")
 
     # hexdump(raw_ramec)
     print("\n", end="")
     pass
+
+# pomocne funkcie k ulohe 4
+def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
+
+    eth_2 = False
+
+    DLH_off_set = 14
+    # 14b pre DLH
+
+    IPv4 = False
+    ARP = False
+
+    IP_off_set = 0
+    TCP = False
+    UDP = False
+    ICMP = False
+
+    next_protocol = ""
+    if ramec_type == "Ethernet II":
+        eth_2 = True
+
+    if eth_2:
+
+        num1213 = 256 * raw_ramec[12] + raw_ramec[13]
+
+        if protocols_dict['Ethertypes', num1213] == "ARP":
+            ARP = True
+            try:
+                next_protocol += protocols_dict['ARP', raw_ramec[21]]
+            except KeyError:
+                next_protocol += f"Neznáma ARP operácia {raw_ramec[21]}\n"
+
+        if protocols_dict['Ethertypes', num1213] == "IPv4":
+            IPv4 = True
+
+            try:
+                next_protocol += protocols_dict['IP', ]
+            except KeyError:
+                next_protocol += f"Neznamy IP protokol {raw_ramec[23]}"
+
+            if raw_ramec[23] == 0x06:
+                # Ak je to TCP tak sa bude pokracovat vypisom TCP
+                TCP = True
+            if raw_ramec[23] == 0x11:
+                # Ak je to UDP tak sa bude pokracovat vypisom UDP
+                UDP = True
+            if raw_ramec[23] == 0x01:
+                # Ak je to ICMP tak sa bude pokracovat vypisom ICMP
+                ICMP = True
+
+    return next_protocol
+
+# vypisky k ulohe 4
+def ramec_info4(ramec, ramec_number):
+
+    print(f"rámec: {ramec_number}")
+    raw_ramec = analyze_bajty(ramec)
+
+    print_ramec_len(raw_ramec)
+
+    ramec_type = analyze_ramec_type(raw_ramec)
+    print(ramec_type)
+
+    print_MAC_address(raw_ramec)
+
+    # vnoreny protokol
+    protocols_dict = creat_protocols_dict()
+    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
+    print(protocol)
+
+    # IPcky
+    # zoznam IP adries vsetkych odosielajucich uzlov
+    global ip_counter
+    if protocol == "TCP" or protocol == "IPv4":
+        source_ip, destination_ip = find_IP(raw_ramec)
+
+        if protocol == "IPv4":
+            if ip_counter[source_ip] == 0:
+                ip_counter[source_ip] = 1
+            elif ip_counter[source_ip] > 0:
+                ip_counter[source_ip] += 1
+
+
+        print(f"zdrojová IP adresa: {source_ip}")
+        print(f"cieľová IP adresa: {destination_ip}")
+
+    # hlbsia analyza protokolov
+    next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
+    print(next_protocol)
+
+    # hexdump(raw_ramec)
+    print("\n", end="")
+    pass
+
 
 # potrebne globalne premenne:
 ip_counter = Counter()
@@ -289,7 +382,7 @@ def main():
             i = 1
             for ramec in ramce:
                 ramec_number = i
-                ramec_info3(ramec, ramec_number)
+                ramec_info4(ramec, ramec_number)
                 i += 1
 
         # zoznam odosielajúcich uzlov
