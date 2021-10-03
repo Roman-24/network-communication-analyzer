@@ -275,7 +275,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
     UDP = False
     ICMP = False
 
-    next_protocol = ""
+    next_protocol = None
     if ramec_type == "Ethernet II":
         eth_2 = True
 
@@ -287,28 +287,18 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
         if protocols_dict['Ethertypes', num1213] == "ARP":
             ARP = True
             try:
-                next_protocol += protocols_dict['ARP', raw_ramec[21]]
+                next_protocol = protocols_dict['ARP', raw_ramec[21]]
             except KeyError:
-                next_protocol += f"Neznáma ARP operácia {raw_ramec[21]}\n"
+                print(f"Neznáma ARP operácia {raw_ramec[21]}\n")
 
         # v IPv4 hladam dalej TCP, UDP, ICMP
         if protocols_dict['Ethertypes', num1213] == "IPv4":
             IPv4 = True
 
             try:
-                next_protocol += protocols_dict['IP', raw_ramec[23]]
+                next_protocol = protocols_dict['IP', raw_ramec[23]]
             except KeyError:
-                next_protocol += f"Neznamy IP protokol {raw_ramec[23]}"
-
-            if next_protocol == "TCP":
-                # bude pokracovat vypisom TCP
-                TCP = True
-            if next_protocol == "UDP":
-                # bude pokracovat vypisom UDP
-                UDP = True
-            if next_protocol == "ICMP":
-                # bude pokracovat vypisom ICMP
-                ICMP = True
+                print(f"Neznamy IP protokol {raw_ramec[23]}")
 
     return next_protocol
 
@@ -348,6 +338,9 @@ def ramec_info4(ramec, ramec_number):
     # hlbsia analyza protokolov
     next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
     print(next_protocol)
+
+    # analyze ARP, TCP, UDP, ICMP
+    analyze_next_protocol(next_protocol)
 
     # hexdump(raw_ramec)
     print("\n", end="")
