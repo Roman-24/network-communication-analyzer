@@ -178,8 +178,8 @@ def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 # potebne k ulohe 3, uloha 3
 def find_IP(raw_ramec):
     raw_ramec = raw_ramec.hex()
-    destination_ip = str(int(raw_ramec[30 * 2:31 * 2], 16)) + "." + str(int(raw_ramec[31 * 2:32 * 2], 16)) + "." + str(int(raw_ramec[32 * 2:33 * 2], 16)) + "." + str(int(raw_ramec[33 * 2:34 * 2], 16))
     source_ip = str(int(raw_ramec[26 * 2:27 * 2], 16)) + "." + str(int(raw_ramec[27 * 2:28 * 2], 16)) + "." + str(int(raw_ramec[28 * 2:29 * 2], 16)) + "." + str(int(raw_ramec[29 * 2:30 * 2], 16))
+    destination_ip = str(int(raw_ramec[30 * 2:31 * 2], 16)) + "." + str(int(raw_ramec[31 * 2:32 * 2], 16)) + "." + str(int(raw_ramec[32 * 2:33 * 2], 16)) + "." + str(int(raw_ramec[33 * 2:34 * 2], 16))
     return source_ip, destination_ip
 
 
@@ -241,13 +241,26 @@ def ramec_info3(ramec, ramec_number):
     print(protocol)
 
     # IPcky
-    source_ip, destination_ip = find_IP(raw_ramec)
-    print(f"zdrojová IP adresa: {source_ip}")
-    print(f"cieľová IP adresa: {destination_ip}")
+    # zoznam IP adries vsetkych odosielajucich uzlov
+    global ip_counter
+    if protocol == "TCP" or protocol == "IPv4":
+        source_ip, destination_ip = find_IP(raw_ramec)
+
+        if ip_counter[source_ip] == 0:
+            ip_counter[source_ip] = 1
+        elif ip_counter[source_ip] > 0:
+            ip_counter[source_ip] += 1
+
+
+        print(f"zdrojová IP adresa: {source_ip}")
+        print(f"cieľová IP adresa: {destination_ip}")
 
     # hexdump(raw_ramec)
     print("\n", end="")
     pass
+
+# potrebne globalne premenne:
+ip_counter = Counter()
 
 def main():
 
@@ -257,6 +270,7 @@ def main():
     pcap_file_for_use = useFiles()
 
     # main loop
+    global ip_counter
     while pcap_file_for_use != None:
 
         print("Actual file: " + pcap_file_for_use)
@@ -269,15 +283,22 @@ def main():
             print(err)
 
         # ak mam nacitane ramce z pcap file
-        if(ramce != None):
+        if ramce != None:
 
             i = 1
-
             for ramec in ramce:
                 ramec_number = i
                 ramec_info3(ramec, ramec_number)
                 i += 1
 
+        # zoznam odosielajúcich uzlov
+        print("IP adresy vysielajúcich uzlov:")
+        for i in ip_counter:
+            print(i)
+
+        # najpocetnejsi odoslany
+        print("Adresa uzla s najväčším počtom odoslaných paketov:")
+        print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
 
         pcap_file_for_use = useFiles()
 
