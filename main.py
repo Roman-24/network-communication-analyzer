@@ -56,6 +56,7 @@ def useFiles():
 
         print("Zly vstup, zadaj znova..")
 
+
 '''
 ***** Funkcie pre analýzu a rozbor komunikácie *****
 '''
@@ -157,10 +158,9 @@ def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
 
     elif ramec_type == "IEEE 802.3 LLC":
         try:
-            # nested_protocol += "DSAP "
-            nested_protocol = protocols_dict['SAPs', raw_ramec[14]]
-            # nested_protocol += "SSAP "
-            nested_protocol += protocols_dict['SAPs', raw_ramec[15]]
+            nested_protocol += "DSAP " + protocols_dict['SAPs', raw_ramec[14]]
+            nested_protocol += "\n"
+            nested_protocol += "SSAP " + protocols_dict['SAPs', raw_ramec[15]]
         except KeyError:
             nested_protocol = "Neznámy SAP 0x{:02x}".format(raw_ramec[14])
 
@@ -279,6 +279,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
     if ramec_type == "Ethernet II":
         eth_2 = True
 
+    # ak mam ethernet 2 tak dalej hladam ARP a IPv4
     if eth_2:
 
         num1213 = 256 * raw_ramec[12] + raw_ramec[13]
@@ -290,6 +291,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
             except KeyError:
                 next_protocol += f"Neznáma ARP operácia {raw_ramec[21]}\n"
 
+        # v IPv4 hladam dalej TCP, UDP, ICMP
         if protocols_dict['Ethertypes', num1213] == "IPv4":
             IPv4 = True
 
@@ -299,13 +301,13 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
                 next_protocol += f"Neznamy IP protokol {raw_ramec[23]}"
 
             if next_protocol == "TCP":
-                # Ak je to TCP tak sa bude pokracovat vypisom TCP
+                # bude pokracovat vypisom TCP
                 TCP = True
             if next_protocol == "UDP":
-                # Ak je to UDP tak sa bude pokracovat vypisom UDP
+                # bude pokracovat vypisom UDP
                 UDP = True
             if next_protocol == "ICMP":
-                # Ak je to ICMP tak sa bude pokracovat vypisom ICMP
+                # bude pokracovat vypisom ICMP
                 ICMP = True
 
     return next_protocol
