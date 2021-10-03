@@ -294,17 +294,17 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
             IPv4 = True
 
             try:
-                next_protocol += protocols_dict['IP', ]
+                next_protocol += protocols_dict['IP', raw_ramec[23]]
             except KeyError:
                 next_protocol += f"Neznamy IP protokol {raw_ramec[23]}"
 
-            if raw_ramec[23] == 0x06:
+            if next_protocol == "TCP":
                 # Ak je to TCP tak sa bude pokracovat vypisom TCP
                 TCP = True
-            if raw_ramec[23] == 0x11:
+            if next_protocol == "UDP":
                 # Ak je to UDP tak sa bude pokracovat vypisom UDP
                 UDP = True
-            if raw_ramec[23] == 0x01:
+            if next_protocol == "ICMP":
                 # Ak je to ICMP tak sa bude pokracovat vypisom ICMP
                 ICMP = True
 
@@ -339,7 +339,6 @@ def ramec_info4(ramec, ramec_number):
                 ip_counter[source_ip] = 1
             elif ip_counter[source_ip] > 0:
                 ip_counter[source_ip] += 1
-
 
         print(f"zdrojová IP adresa: {source_ip}")
         print(f"cieľová IP adresa: {destination_ip}")
