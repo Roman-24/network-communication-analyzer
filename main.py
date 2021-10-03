@@ -246,10 +246,11 @@ def ramec_info3(ramec, ramec_number):
     if protocol == "TCP" or protocol == "IPv4":
         source_ip, destination_ip = find_IP(raw_ramec)
 
-        if ip_counter[source_ip] == 0:
-            ip_counter[source_ip] = 1
-        elif ip_counter[source_ip] > 0:
-            ip_counter[source_ip] += 1
+        if protocol == "IPv4":
+            if ip_counter[source_ip] == 0:
+                ip_counter[source_ip] = 1
+            elif ip_counter[source_ip] > 0:
+                ip_counter[source_ip] += 1
 
 
         print(f"zdrojová IP adresa: {source_ip}")
@@ -299,9 +300,13 @@ def main():
         # najpocetnejsi odoslany
         print("Adresa uzla s najväčším počtom odoslaných paketov:")
         print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
+        reset_counter()
 
         pcap_file_for_use = useFiles()
 
+def reset_counter():
+    global ip_counter
+    ip_counter = Counter()
 
 if __name__ == '__main__':
     print('** PyCharm starting.. **')
