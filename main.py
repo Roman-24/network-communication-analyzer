@@ -302,6 +302,36 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
 
     return next_protocol
 
+# analyze ARP, TCP, UDP, ICMP
+def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
+
+    TCP = False
+    UDP = False
+    ICMP = False
+
+    # treba zistiť off_set pre IP adresu
+
+    if next_protocol == "TCP":
+        # bude pokracovat vypisom TCP
+        TCP = True
+    if next_protocol == "UDP":
+        # bude pokracovat vypisom UDP
+        UDP = True
+    if next_protocol == "ICMP":
+        # bude pokracovat vypisom ICMP
+        ICMP = True
+
+    # zistenie portov pre TCP, UDP
+    if TCP or UDP:
+        raw_ramec = raw_ramec.hex()
+        source_port = int(raw_ramec[34*2:36*2], 16)
+        destination_port = int(raw_ramec[36*2:38*2], 16)
+
+        print("source_port: ", source_port)
+        print("destination_port: ", destination_port)
+
+    return
+
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
@@ -340,7 +370,11 @@ def ramec_info4(ramec, ramec_number):
     print(next_protocol)
 
     # analyze ARP, TCP, UDP, ICMP
-    analyze_next_protocol(next_protocol)
+    if protocol == "IPv4":
+        analyze_next_protocol(raw_ramec, next_protocol, protocols_dict)
+    elif protocol == "ARP":
+        # analyze_ARP()
+        pass
 
     # hexdump(raw_ramec)
     print("\n", end="")
