@@ -30,13 +30,13 @@ def useFiles():
     pcap_files_paths = temp_file.readlines()
     temp_file.close()
 
-    for iterator, line in enumerate(pcap_files_paths, 1):
-        print("{:03}: {}".format(iterator, line), end="")
+    for i, line in enumerate(pcap_files_paths, 1):
+        print(f"{i}: {line}", end="")
 
     while True:
         print("Pre ukoncenie programu napis: e")
         print("Pre vlastnu cestu k suboru zadaj: 0")
-        print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths) - 1}(vratane)")
+        print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths)}(vratane)")
 
         user_input = input()
 
@@ -44,14 +44,18 @@ def useFiles():
             print("Exit..")
             exit()
 
-        user_input = int(user_input) # sem este treba osetrit trycache
+        try: # sem este treba osetrit trycache
+            user_input = int(user_input)
+        except ValueError:
+            print("The input was not a valid integer")
+            main()
 
         if (user_input == 0):
             print("Zadaj relativnu cestu k suboru: ")
             user_path = input()
             return os.path.join(os.path.dirname(__file__), user_path)
 
-        if (user_input > 0 and user_input < len(pcap_files_paths)):
+        elif (user_input > 0 and user_input <= len(pcap_files_paths)):
             return os.path.join(os.path.dirname(__file__), (pcap_files_paths[user_input - 1])[:-1])
 
         print("Zly vstup, zadaj znova..")
@@ -305,6 +309,24 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
 
     return next_protocol
 
+def print_IPv4_addresses(raw_ramec, protocol):
+    # IPcky
+    # zoznam IP adries vsetkych odosielajucich uzlov
+    global ip_counter
+    if protocol == "TCP" or protocol == "IPv4":
+        source_ip, destination_ip = find_IP(raw_ramec)
+
+        if protocol == "IPv4":
+            if ip_counter[source_ip] == 0:
+                ip_counter[source_ip] = 1
+            elif ip_counter[source_ip] > 0:
+                ip_counter[source_ip] += 1
+
+        print(f"zdrojová IP adresa: {source_ip}")
+        print(f"cieľová IP adresa: {destination_ip}")
+
+    pass
+
 # analyze ARP, TCP, UDP, ICMP
 def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
 
@@ -371,20 +393,8 @@ def ramec_info4(ramec, ramec_number):
     protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
     print(protocol)
 
-    # IPcky
-    # zoznam IP adries vsetkych odosielajucich uzlov
-    global ip_counter
-    if protocol == "TCP" or protocol == "IPv4":
-        source_ip, destination_ip = find_IP(raw_ramec)
-
-        if protocol == "IPv4":
-            if ip_counter[source_ip] == 0:
-                ip_counter[source_ip] = 1
-            elif ip_counter[source_ip] > 0:
-                ip_counter[source_ip] += 1
-
-        print(f"zdrojová IP adresa: {source_ip}")
-        print(f"cieľová IP adresa: {destination_ip}")
+    # alalyze IPv4, IPcky a pocty uzlov
+    print_IPv4_addresses(raw_ramec, protocol)
 
     # hlbsia analyza protokolov
     next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
@@ -417,7 +427,7 @@ def main():
     global ip_counter
     while pcap_file_for_use != None:
 
-        print("Actual file: " + pcap_file_for_use)
+        print("Actual file: " + pcap_file_for_use + "\n")
 
         # open and read the pcap file
         ramce = None
@@ -425,6 +435,8 @@ def main():
             ramce = rdpcap(pcap_file_for_use)
         except Exception as err:
             print(err)
+            print()
+            main()
 
         # ak mam nacitane ramce z pcap file
         if ramce != None:
