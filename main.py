@@ -17,6 +17,14 @@ from collections import Counter
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
+# potrebne globalne premenne:
+ip_counter = Counter()
+
+tftp_ramce = []
+arp_ramce = []
+icmp_ramce = []
+
+
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
 
@@ -177,7 +185,6 @@ def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
             nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num1213)
 
     return nested_protocol
-
 
 # potebne k ulohe 3, uloha 3
 def find_IP(raw_ramec):
@@ -375,6 +382,10 @@ def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
 
     return
 
+def analyze_ARP(raw_ramec, ramec_number):
+
+    pass
+
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
@@ -388,33 +399,39 @@ def ramec_info4(ramec, ramec_number):
 
     print_MAC_address(raw_ramec)
 
+    # zatial mam toto
+    '''
+    Novell 802.3 RAW
+    IEEE 802.3 LLC + SNAP
+    IEEE 802.3 LLC
+    Ethernet II
+    '''
+    # a v tom idem hladat dalej
+
     # vnoreny protokol
     protocols_dict = creat_protocols_dict()
     protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
     print(protocol)
 
-    # alalyze IPv4, IPcky a pocty uzlov
-    print_IPv4_addresses(raw_ramec, protocol)
-
     # hlbsia analyza protokolov
     next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
-    if next_protocol != None:
-        print(next_protocol)
 
     # analyze ARP, TCP, UDP, ICMP
     if protocol == "IPv4":
-        analyze_next_protocol(raw_ramec, next_protocol, protocols_dict)
+        # alalyze IPv4, IPcky a pocty uzlov
+        print_IPv4_addresses(raw_ramec, protocol)
     elif protocol == "ARP":
-        # analyze_ARP()
+        analyze_ARP(raw_ramec, ramec_number)
         pass
+
+    if next_protocol != None:
+        print(next_protocol)
+        analyze_next_protocol(raw_ramec, next_protocol, protocols_dict)
 
     # hexdump(raw_ramec)
     print("\n", end="")
     pass
 
-
-# potrebne globalne premenne:
-ip_counter = Counter()
 
 def main():
 
