@@ -284,21 +284,24 @@ def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
 
         num1213 = 256 * raw_ramec[12] + raw_ramec[13]
 
-        if protocols_dict['Ethertypes', num1213] == "ARP":
-            ARP = True
-            try:
-                next_protocol = protocols_dict['ARP', raw_ramec[21]]
-            except KeyError:
-                print(f"Neznáma ARP operácia {raw_ramec[21]}\n")
+        try:
+            if protocols_dict['Ethertypes', num1213] == "ARP":
+                ARP = True
+                try:
+                    next_protocol = protocols_dict['ARP', raw_ramec[21]]
+                except KeyError:
+                    print(f"Neznáma ARP operácia {raw_ramec[21]}\n")
 
-        # v IPv4 hladam dalej TCP, UDP, ICMP
-        if protocols_dict['Ethertypes', num1213] == "IPv4":
-            IPv4 = True
+            # v IPv4 hladam dalej TCP, UDP, ICMP
+            if protocols_dict['Ethertypes', num1213] == "IPv4":
+                IPv4 = True
 
-            try:
-                next_protocol = protocols_dict['IP', raw_ramec[23]]
-            except KeyError:
-                print(f"Neznamy IP protokol {raw_ramec[23]}")
+                try:
+                    next_protocol = protocols_dict['IP', raw_ramec[23]]
+                except KeyError:
+                    print(f"Neznamy IP protokol {raw_ramec[23]}")
+        except Exception as err:
+            print(err)
 
     return next_protocol
 
@@ -308,6 +311,10 @@ def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
     TCP = False
     UDP = False
     ICMP = False
+
+    next_next_protocol = None
+    tftp_porty = []
+    rip = 0
 
     # treba zistiť off_set pre IP adresu
 
@@ -321,14 +328,28 @@ def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
         # bude pokracovat vypisom ICMP
         ICMP = True
 
-    # zistenie portov pre TCP, UDP
     if TCP or UDP:
+
+        # zistenie portov pre TCP, UDP
         raw_ramec = raw_ramec.hex()
         source_port = int(raw_ramec[34*2:36*2], 16)
         destination_port = int(raw_ramec[36*2:38*2], 16)
 
-        print("source_port: ", source_port)
-        print("destination_port: ", destination_port)
+        protocol_by_port = min(source_port, destination_port)
+
+        try:
+            temp_str = "TCP" if TCP else "UDP"
+            next_next_protocol = protocols_dict[temp_str, protocol_by_port]
+        except KeyError:
+            print("Neznámy port pre určenie protokolu")
+
+        if next_next_protocol != None:
+            print(next_next_protocol)
+
+        print(f"zdrojový port: {source_port}")
+        print(f"cieľový port: {destination_port}")
+
+        # sem este nejaky vypis podla portov ci co to
 
     return
 
@@ -367,7 +388,8 @@ def ramec_info4(ramec, ramec_number):
 
     # hlbsia analyza protokolov
     next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
-    print(next_protocol)
+    if next_protocol != None:
+        print(next_protocol)
 
     # analyze ARP, TCP, UDP, ICMP
     if protocol == "IPv4":
