@@ -383,7 +383,15 @@ def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
     return
 
 def analyze_ARP(raw_ramec, ramec_number):
-
+    raw_ramec = raw_ramec.hex()
+    arp_ramce.append({
+        "ramec_number": ramec_number,
+        "operation": int(raw_ramec[20*2:22*2]),
+        "source_hardware_address": raw_ramec[22*2:23*2] + ":" + raw_ramec[23*2:24*2] + ":" + raw_ramec[24*2:25*2] + ":" + raw_ramec[25*2:26*2] + ":" + raw_ramec[26*2:27*2] + ":" + raw_ramec[27*2:28*2],
+        "source_protocol_address": str(int(raw_ramec[28*2:29*2], 16)) + "." + str(int(raw_ramec[29*2:30*2], 16)) + "." + str(int(raw_ramec[30*2:31*2], 16)) + "." + str(int(raw_ramec[31*2:32*2], 16)),
+        "target_hardware_address": raw_ramec[32*2:33*2] + ":" + raw_ramec[33*2:34*2] + ":" + raw_ramec[34*2:35*2] + ":" + raw_ramec[35*2:36*2] + ":" + raw_ramec[36*2:37*2] + ":" + raw_ramec[37*2:38*2],
+        "target_protocol_address": str(int(raw_ramec[38*2:39*2], 16)) + "." + str(int(raw_ramec[39*2:40*2], 16)) + "." + str(int(raw_ramec[40*2:41*2], 16)) + "." + str(int(raw_ramec[41*2:42*2], 16)),
+    })
     pass
 
 # vypisky k ulohe 4
@@ -473,6 +481,9 @@ def main():
         print("Adresa uzla s najväčším počtom odoslaných paketov:")
         print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
         reset_counter()
+
+        for i in range(len(arp_ramce)):
+            print(arp_ramce[i])
 
         pcap_file_for_use = useFiles()
 
