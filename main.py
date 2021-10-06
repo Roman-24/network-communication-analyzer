@@ -382,8 +382,9 @@ def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
 
     return
 
-def analyze_ARP(raw_ramec, ramec_number):
+def collect_ARP(raw_ramec, ramec_number):
     raw_ramec = raw_ramec.hex()
+    global arp_ramce
     arp_ramce.append({
         "ramec_number": ramec_number,
         "operation": int(raw_ramec[20*2:22*2]),
@@ -393,6 +394,58 @@ def analyze_ARP(raw_ramec, ramec_number):
         "target_protocol_address": str(int(raw_ramec[38*2:39*2], 16)) + "." + str(int(raw_ramec[39*2:40*2], 16)) + "." + str(int(raw_ramec[40*2:41*2], 16)) + "." + str(int(raw_ramec[41*2:42*2], 16)),
     })
     pass
+
+def analyze_ARP():
+
+    global arp_ramce
+    flag_new = True
+
+    communications = []
+
+    for arp_ramec in arp_ramce:
+
+        for iterator_com in communications:
+
+            # request
+            # ak je to request tak hladam v one_communication ci som nemal nieco co davalo odpoved
+            if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
+                iterator_com[1].append(arp_ramec["ramec_number"])
+                flag_new = False
+                pass
+
+            # reply
+            if arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["target_hardware_address"]:
+                iterator_com[2].append(arp_ramec["ramec_number"])
+                flag_new = False
+                pass
+
+        # vytvorenie novej komunikacie
+        if flag_new:
+
+            ramec = []
+            requests = []
+            replies = []
+            one_communication = [ramec, requests, replies]
+
+            # request
+            if arp_ramec["operation"] == 1:
+                one_communication[0] = arp_ramec
+                one_communication[1].append(arp_ramec["ramec_number"])
+                communications.append(one_communication)
+                flag_new = True
+                pass
+
+            # reply
+            if arp_ramec["operation"] == 2:
+                one_communication[0] = arp_ramec
+                one_communication[2].append(arp_ramec["ramec_number"])
+                communications.append(one_communication)
+                flag_new = True
+                pass
+
+            pass
+
+    return communications
 
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
@@ -429,7 +482,7 @@ def ramec_info4(ramec, ramec_number):
         # alalyze IPv4, IPcky a pocty uzlov
         print_IPv4_addresses(raw_ramec, protocol)
     elif protocol == "ARP":
-        analyze_ARP(raw_ramec, ramec_number)
+        collect_ARP(raw_ramec, ramec_number)
         pass
 
     if next_protocol != None:
@@ -472,6 +525,12 @@ def main():
                 ramec_info4(ramec, ramec_number)
                 i += 1
 
+        # Analyzovanie ARP komunikacie
+        print("Analýza ARP")
+        for analyze_ARP_temp in analyze_ARP():
+            print(analyze_ARP_temp)
+        print()
+
         # zoznam odosielajúcich uzlov
         print("IP adresy vysielajúcich uzlov:")
         for i in ip_counter:
@@ -482,9 +541,14 @@ def main():
         print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
         reset_counter()
 
+        tftp_ramce.clear()
+        arp_ramce.clear()
+        icmp_ramce.clear()
+
+        '''
         for i in range(len(arp_ramce)):
             print(arp_ramce[i])
-
+        '''
         pcap_file_for_use = useFiles()
 
 def reset_counter():
