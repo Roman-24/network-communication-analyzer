@@ -399,7 +399,7 @@ def analyze_ARP():
 
     global arp_ramce
     flag_new = True
-
+    boaaa = arp_ramce
     communications = []
 
     for arp_ramec in arp_ramce:
@@ -409,30 +409,32 @@ def analyze_ARP():
             # request
             # ak je to request tak hladam v one_communication ci som nemal nieco co davalo odpoved
             if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
-                iterator_com[1].append(arp_ramec["ramec_number"])
-                flag_new = False
-                pass
+                    iterator_com[1].append(arp_ramec["ramec_number"])
+                    flag_new = False
+                    break
+                    pass
 
             # reply
-            if arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["target_hardware_address"]:
-                iterator_com[2].append(arp_ramec["ramec_number"])
-                flag_new = False
-                pass
+            elif arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["target_hardware_address"]:
+                    iterator_com[2].append(arp_ramec["ramec_number"])
+                    flag_new = False
+                    break
+                    pass
+            
+            else:
+                flag_new = True
 
         # vytvorenie novej komunikacie
         if flag_new:
 
-            ramec = []
-            requests = []
-            replies = []
-            one_communication = [ramec, requests, replies]
+            # arp_ramec, requests, replies
+            one_communication = [[], [], []]
 
             # request
             if arp_ramec["operation"] == 1:
                 one_communication[0] = arp_ramec
                 one_communication[1].append(arp_ramec["ramec_number"])
                 communications.append(one_communication)
-                flag_new = True
                 pass
 
             # reply
@@ -440,12 +442,16 @@ def analyze_ARP():
                 one_communication[0] = arp_ramec
                 one_communication[2].append(arp_ramec["ramec_number"])
                 communications.append(one_communication)
-                flag_new = True
                 pass
 
             pass
 
     return communications
+
+def print_ARP_communications(communications):
+
+    if(len(communications[1]) > 1):
+        print("bla bla")
 
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
@@ -527,9 +533,12 @@ def main():
 
         # Analyzovanie ARP komunikacie
         print("Analýza ARP")
+        '''
         for analyze_ARP_temp in analyze_ARP():
             print(analyze_ARP_temp)
         print()
+        '''
+        print_ARP_communications(analyze_ARP())
 
         # zoznam odosielajúcich uzlov
         print("IP adresy vysielajúcich uzlov:")
