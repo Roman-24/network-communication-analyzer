@@ -480,8 +480,16 @@ def print_ARP_communications(communications):
 
 
         if (len(communication[2]) > 0):
-            mess = "ARP-reply" + ""
+            mess = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+            mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
+            mess += "rámec " + str(communication[0]["ramec_number"]) + "\n"
+            mess += communication[0]["ramec_type"] + "\n"
+            mess += communication[0]["protocol"] + "\n"
+            mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
+            mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+
             print(mess)
+            mess = ""
 
     pass
 
