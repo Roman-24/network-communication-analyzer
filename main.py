@@ -39,10 +39,36 @@ def creat_protocols_dict():
 protocols_dict = creat_protocols_dict()
 ip_counter = Counter()
 
-tftp_ramce = []
+RAW = False
+SNAP = False
+LLC = False
+ETH2 = False
+
+IP = False
+IPv4 = False
+ARP = False
+
+ICMP = False
+TCP = False
+UDP = False
+
+HTTP = False
+HTTPs = False
+TELNET = False
+SSH = False
+FTPr = False
+FTPd = False
+TFTP = False
+
 arp_ramce = []
 icmp_ramce = []
-
+http_ramce = []
+https_ramce = []
+telnet_ramce = []
+ssh_ramce = []
+ftp_control_ramce = []
+ftp_data_ramce = []
+tftp_ramce = []
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
@@ -120,6 +146,7 @@ def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
 
 def analyze_ramec_type(raw_ramec):
 
+    global ETH2
     # kontrolny vypisok
     '''
     print("Typ rámca: ", end="")
@@ -140,6 +167,7 @@ def analyze_ramec_type(raw_ramec):
         ramec_type = protocols_dict.get(("frameType", raw_ramec[14]), "IEEE 802.3 LLC")
     else:
         ramec_type = "Ethernet II"
+        ETH2 = True
 
     return ramec_type
 
@@ -155,10 +183,12 @@ def print_MAC_address(source_mac, target_mac):
 
 # k ulohe 2
 def find_nested_protocol(raw_ramec, ramec_type):
+    global RAW
 
     nested_protocol = ""
 
     if ramec_type == "Novell 802.3 RAW":
+        RAW = True
         nested_protocol = "IPX"
 
     elif ramec_type == "IEEE 802.3 LLC + SNAP":
@@ -236,31 +266,21 @@ def ramec_info3(ramec, ramec_number):
 # pomocne funkcie k ulohe 4
 def find_next_protocol(raw_ramec, ramec_type, protocol):
 
+    # zistujem co je v IP alebo co je v ARP
+
     eth_2 = False
-
-    DLH_off_set = 14
-    # 14b pre DLH
-
-    IPv4 = False
-    ARP = False
-
-    IP_off_set = 0
-    TCP = False
-    UDP = False
-    ICMP = False
-
     next_protocol = None
+
     if ramec_type == "Ethernet II":
         eth_2 = True
 
-    # ak mam ethernet 2 tak dalej hladam ARP a IPv4
+    # ak mam ethernet 2 tak dalej hladam ARP alebo IPv4
     if eth_2:
 
         num1213 = 256 * raw_ramec[12] + raw_ramec[13]
 
         try:
             if protocols_dict['Ethertypes', num1213] == "ARP":
-                ARP = True
                 try:
                     next_protocol = protocols_dict['ARP', raw_ramec[21]]
                 except KeyError:
@@ -297,16 +317,11 @@ def print_IPv4_addresses(raw_ramec, protocol):
 
     pass
 
-# analyze ARP, TCP, UDP, ICMP
+# hlbsie analyzuje TCP, UDP, ICMP
 def analyze_next_protocol(raw_ramec, next_protocol):
 
-    TCP = False
-    UDP = False
-    ICMP = False
-
+    TCP, UDP, ICMP = None, None, None
     next_next_protocol = None
-    tftp_porty = []
-    rip = 0
 
     # treba zistiť off_set pre IP adresu
 
@@ -471,26 +486,41 @@ def ramec_info4(ramec, ramec_number):
     '''
     # a v tom idem hladat dalej
 
-    # vnoreny protokol
+    # vnoreny protokol pre Ethernet II
     protocol = find_nested_protocol(raw_ramec, ramec_type)
+    # IP (IPv4 alebo IPv6)
+    # ARP
     print(protocol)
 
-    # hlbsia analyza protokolov
-    next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
-
     # analyze ARP, TCP, UDP, ICMP
+    if protocol == "ARP":
+        collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
+        pass
+
     if protocol == "IPv4":
         # alalyze IPv4, IPcky a pocty uzlov
         print_IPv4_addresses(raw_ramec, protocol)
-    elif protocol == "ARP":
-        collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
-        pass
-    elif protocol == "HTTP":
-        pass
+
+    # hlbsia analyza protokolov
+    # moze byt: ICMP, TCP, UDP
+    next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
 
     if next_protocol != None:
         print(next_protocol)
-        analyze_next_protocol(raw_ramec, next_protocol)
+
+        if next_protocol == "ICMP":
+            # Echo request, Echo reply, Time exceeded, a pod.
+            pass
+        elif next_protocol == "TCP":
+            # hladaj dalej
+            # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
+            analyze_next_protocol(raw_ramec, next_protocol)
+            pass
+        elif next_protocol == "UDP":
+            # hladaj dalej
+            # TFTP
+            analyze_next_protocol(raw_ramec, next_protocol)
+            pass
 
     # hexdump(raw_ramec)
     print("\n", end="")
