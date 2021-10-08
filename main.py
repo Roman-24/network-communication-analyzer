@@ -34,25 +34,6 @@ def creat_protocols_dict():
 
         return protocols_dict
 
-'''
-    protocol_from_ramec = raw_ramec[(12):(14)].hex()
-
-    with open(PROTOCOLS_LIST, 'r') as protocol_file:
-        while True:
-            line = protocol_file.readline()
-
-            if line.startswith("#"):
-                continue
-            elif not line:
-                break
-            else:
-                protocol_key, protocol_name = line.split(" ", 1)
-                protocol_name = protocol_name[:-1]
-                if protocol_key == protocol_from_ramec:
-                    print(protocol_name.rstrip())
-    pass
-'''
-
 
 # potrebne globalne premenne:
 protocols_dict = creat_protocols_dict()
@@ -120,22 +101,23 @@ def search_protocol_name(my_value):
 def analyze_bajty(ramec):
     return raw(ramec)
 
-# uloha 1b
-def print_ramec_len(raw_ramec):
+def ramec_len(raw_ramec):
 
     len_of_raw_ramec = len(raw_ramec)
-
-    print(f"dĺžka rámca poskytnutá pcap API - {len_of_raw_ramec} B")
+    len_of_raw_ramec_4 = None
 
     if (len_of_raw_ramec <= 60):
-        len_of_raw_ramec = 64
+        len_of_raw_ramec_4 = 64
     else:
-        len_of_raw_ramec += 4
+        len_of_raw_ramec_4 = len_of_raw_ramec + 4
 
-    print(f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec} B")
+    return len_of_raw_ramec, len_of_raw_ramec_4
+
+def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
+    print(f"dĺžka rámca poskytnutá pcap API - {len_of_raw_ramec} B")
+    print(f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec_4} B")
     pass
 
-# uloha 1c
 def analyze_ramec_type(raw_ramec):
 
     # kontrolny vypisok
@@ -161,11 +143,15 @@ def analyze_ramec_type(raw_ramec):
 
     return ramec_type
 
-# uloha 1d
-def print_MAC_address(raw_ramec):
+def MAC_address(raw_ramec):
     raw_ramec = raw_ramec.hex()
-    print("Zdrojová MAC adresa: " + raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24])
-    print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
+    source_mac = raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24]
+    target_mac = raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12]
+    return source_mac, target_mac
+
+def print_MAC_address(source_mac, target_mac):
+    print("Zdrojová MAC adresa: " + source_mac)
+    print("Cieľová MAC adresa: " + target_mac)
 
 # k ulohe 2
 def find_nested_protocol(raw_ramec, ramec_type):
@@ -208,56 +194,20 @@ def find_IP(raw_ramec):
     return source_ip, destination_ip
 
 
-# vypisky k ulohe 1
-def ramec_info(ramec, ramec_number):
-
-    print(f"rámec: {ramec_number}")
-    raw_ramec = analyze_bajty(ramec)
-
-    print_ramec_len(raw_ramec)
-
-    ramec_type = analyze_ramec_type(raw_ramec)
-    print(ramec_type)
-
-    print_MAC_address(raw_ramec)
-
-    hexdump(raw_ramec)
-    print("\n", end="")
-    pass
-
-# vypisky k ulohe 2
-def ramec_info2(ramec, ramec_number):
-
-    print(f"rámec: {ramec_number}")
-    raw_ramec = analyze_bajty(ramec)
-
-    print_ramec_len(raw_ramec)
-
-    ramec_type = analyze_ramec_type(raw_ramec)
-    print(ramec_type)
-
-    print_MAC_address(raw_ramec)
-
-    # vnoreny protokol
-    protocol = find_nested_protocol(raw_ramec, ramec_type)
-    print(protocol)
-
-    hexdump(raw_ramec)
-    print("\n", end="")
-    pass
-
 # vypisky k ulohe 3
 def ramec_info3(ramec, ramec_number):
 
     print(f"rámec: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
 
-    print_ramec_len(raw_ramec)
+    len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
+    print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4)
 
     ramec_type = analyze_ramec_type(raw_ramec)
     print(ramec_type)
 
-    print_MAC_address(raw_ramec)
+    source_mac, target_mac = MAC_address(raw_ramec)
+    print_MAC_address(source_mac, target_mac)
 
     # vnoreny protokol
     protocol = find_nested_protocol(raw_ramec, ramec_type)
@@ -269,6 +219,7 @@ def ramec_info3(ramec, ramec_number):
     if protocol == "TCP" or protocol == "IPv4":
         source_ip, destination_ip = find_IP(raw_ramec)
 
+        # ip counter
         if protocol == "IPv4":
             if ip_counter[source_ip] == 0:
                 ip_counter[source_ip] = 1
@@ -368,6 +319,9 @@ def analyze_next_protocol(raw_ramec, next_protocol):
     if next_protocol == "ICMP":
         # bude pokracovat vypisom ICMP
         ICMP = True
+
+    if UDP:
+        pass
 
     if TCP or UDP:
 
@@ -499,12 +453,14 @@ def ramec_info4(ramec, ramec_number):
     print(f"rámec: {ramec_number}")
     raw_ramec = analyze_bajty(ramec)
 
-    print_ramec_len(raw_ramec)
+    len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
+    print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4)
 
     ramec_type = analyze_ramec_type(raw_ramec)
     print(ramec_type)
 
-    print_MAC_address(raw_ramec)
+    source_mac, target_mac = MAC_address(raw_ramec)
+    print_MAC_address(source_mac, target_mac)
 
     # zatial mam toto
     '''
@@ -528,6 +484,8 @@ def ramec_info4(ramec, ramec_number):
         print_IPv4_addresses(raw_ramec, protocol)
     elif protocol == "ARP":
         collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
+        pass
+    elif protocol == "HTTP":
         pass
 
     if next_protocol != None:
