@@ -184,7 +184,8 @@ def print_MAC_address(source_mac, target_mac):
 # k ulohe 2
 def find_nested_protocol(raw_ramec, ramec_type):
     global RAW
-
+    global SNAP
+    global LLC
     nested_protocol = ""
 
     if ramec_type == "Novell 802.3 RAW":
@@ -192,6 +193,7 @@ def find_nested_protocol(raw_ramec, ramec_type):
         nested_protocol = "IPX"
 
     elif ramec_type == "IEEE 802.3 LLC + SNAP":
+        SNAP = True
         num2021 = 256 * raw_ramec[20] + raw_ramec[21]
         try:
             nested_protocol = protocols_dict['Ethertypes', num2021]
@@ -199,6 +201,7 @@ def find_nested_protocol(raw_ramec, ramec_type):
             nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num2021)
 
     elif ramec_type == "IEEE 802.3 LLC":
+        LLC = True
         try:
             nested_protocol += "DSAP " + protocols_dict['SAPs', raw_ramec[14]]
             nested_protocol += "\n"
@@ -335,6 +338,7 @@ def analyze_next_protocol(raw_ramec, next_protocol):
         # bude pokracovat vypisom ICMP
         ICMP = True
 
+
     if UDP:
         pass
 
@@ -362,6 +366,10 @@ def analyze_next_protocol(raw_ramec, next_protocol):
         # sem este nejaky vypis podla portov ci co to
 
     return
+
+def analyze_ICMP(raw_ramec):
+    index = 14 + (raw_ramec[14] % 16) * 4
+    return protocols_dict.get( ("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
 
 def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
     raw_ramec_hex = raw_ramec.hex()
@@ -510,6 +518,7 @@ def ramec_info4(ramec, ramec_number):
 
         if next_protocol == "ICMP":
             # Echo request, Echo reply, Time exceeded, a pod.
+            print(analyze_ICMP(raw_ramec))
             pass
         elif next_protocol == "TCP":
             # hladaj dalej
