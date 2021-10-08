@@ -323,10 +323,10 @@ def print_IPv4_addresses(raw_ramec, protocol):
 # hlbsie analyzuje TCP, UDP, ICMP
 def analyze_next_protocol(raw_ramec, next_protocol):
 
-    TCP, UDP, ICMP = None, None, None
+    global TCP
+    global UDP
+    global ICMP
     next_next_protocol = None
-
-    # treba zistiť off_set pre IP adresu
 
     if next_protocol == "TCP":
         # bude pokracovat vypisom TCP
@@ -340,6 +340,7 @@ def analyze_next_protocol(raw_ramec, next_protocol):
 
 
     if UDP:
+        analyze_TFTP(raw_ramec)
         pass
 
     if TCP or UDP:
@@ -370,6 +371,43 @@ def analyze_next_protocol(raw_ramec, next_protocol):
 def analyze_ICMP(raw_ramec):
     index = 14 + (raw_ramec[14] % 16) * 4
     return protocols_dict.get( ("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
+
+def analyze_TFTP(raw_ramec):
+
+    tftp_comunication = []
+    tftp_ports = []
+    index = 14 + (raw_ramec[14] % 16) * 4
+    source_port = raw_ramec[index] * 256 + raw_ramec[index + 1]
+    destination_port = raw_ramec[index + 2] * 256 + raw_ramec[index + 3]
+
+    porty = [source_port, destination_port]
+
+    sixnine = 0x45
+    if destination_port == sixnine:
+        tftp_ports.append(porty)
+    else:
+        for temp in tftp_ports:
+            if temp[0] != destination_port and temp[1] == source_port:
+                if destination_port == temp[0] and temp[1] == 0x45:
+                    temp[1] = sixnine
+                elif temp[0] == 0x45:
+                    temp[0] = sixnine
+                temp.sort()
+
+    mess = ""
+    try:
+        mess += "{}\n".format(protocols_dict['UDP', min(source_port, destination_port)])
+    except KeyError:
+        if porty in tftp_ports:
+            mess += "TFTP\n"
+        else:
+            mess += "Nerozpoznaný port\n"
+
+    mess += "zdrojový port: {}\n".format(source_port)
+    mess += "cieľový port: {}\n".format(destination_port)
+
+    # print(mess)
+    pass
 
 def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
     raw_ramec_hex = raw_ramec.hex()
@@ -454,7 +492,6 @@ def print_ARP_communications(communications):
 
             print(mess)
             mess = ""
-
 
         if (len(communication[2]) > 0):
             mess = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
