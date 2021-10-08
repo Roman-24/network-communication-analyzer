@@ -394,16 +394,18 @@ def analyze_next_protocol(raw_ramec, next_protocol):
 
     return
 
-def collect_ARP(raw_ramec, ramec_number):
-    raw_ramec = raw_ramec.hex()
+def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
+    raw_ramec_hex = raw_ramec.hex()
     global arp_ramce
     arp_ramce.append({
         "ramec_number": ramec_number,
-        "operation": int(raw_ramec[20*2:22*2]),
-        "source_hardware_address": raw_ramec[22*2:23*2] + ":" + raw_ramec[23*2:24*2] + ":" + raw_ramec[24*2:25*2] + ":" + raw_ramec[25*2:26*2] + ":" + raw_ramec[26*2:27*2] + ":" + raw_ramec[27*2:28*2],
-        "source_protocol_address": str(int(raw_ramec[28*2:29*2], 16)) + "." + str(int(raw_ramec[29*2:30*2], 16)) + "." + str(int(raw_ramec[30*2:31*2], 16)) + "." + str(int(raw_ramec[31*2:32*2], 16)),
-        "target_hardware_address": raw_ramec[32*2:33*2] + ":" + raw_ramec[33*2:34*2] + ":" + raw_ramec[34*2:35*2] + ":" + raw_ramec[35*2:36*2] + ":" + raw_ramec[36*2:37*2] + ":" + raw_ramec[37*2:38*2],
-        "target_protocol_address": str(int(raw_ramec[38*2:39*2], 16)) + "." + str(int(raw_ramec[39*2:40*2], 16)) + "." + str(int(raw_ramec[40*2:41*2], 16)) + "." + str(int(raw_ramec[41*2:42*2], 16)),
+        "operation": int(raw_ramec_hex[20*2:22*2]),
+        "source_hardware_address": raw_ramec_hex[22*2:23*2] + ":" + raw_ramec_hex[23*2:24*2] + ":" + raw_ramec_hex[24*2:25*2] + ":" + raw_ramec_hex[25*2:26*2] + ":" + raw_ramec_hex[26*2:27*2] + ":" + raw_ramec_hex[27*2:28*2],
+        "source_protocol_address": str(int(raw_ramec_hex[28*2:29*2], 16)) + "." + str(int(raw_ramec_hex[29*2:30*2], 16)) + "." + str(int(raw_ramec_hex[30*2:31*2], 16)) + "." + str(int(raw_ramec_hex[31*2:32*2], 16)),
+        "target_hardware_address": raw_ramec_hex[32*2:33*2] + ":" + raw_ramec_hex[33*2:34*2] + ":" + raw_ramec_hex[34*2:35*2] + ":" + raw_ramec_hex[35*2:36*2] + ":" + raw_ramec_hex[36*2:37*2] + ":" + raw_ramec_hex[37*2:38*2],
+        "target_protocol_address": str(int(raw_ramec_hex[38*2:39*2], 16)) + "." + str(int(raw_ramec_hex[39*2:40*2], 16)) + "." + str(int(raw_ramec_hex[40*2:41*2], 16)) + "." + str(int(raw_ramec_hex[41*2:42*2], 16)),
+        "ramec_type": ramec_type,
+        "protocol": protocol,
     })
     pass
 
@@ -461,8 +463,27 @@ def analyze_ARP():
 
 def print_ARP_communications(communications):
 
-    if(len(communications[1]) > 1):
-        print("bla bla")
+    print("***** Analýza ARP *****")
+    for communication in communications:
+
+        if(len(communication[1]) > 0):
+            mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
+            mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
+            mess += "rámec " + str(communication[0]["ramec_number"]) + "\n"
+            mess += communication[0]["ramec_type"] + "\n"
+            mess += communication[0]["protocol"] + "\n"
+            mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
+            mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+
+            print(mess)
+            mess = ""
+
+
+        if (len(communication[2]) > 0):
+            mess = "ARP-reply" + ""
+            print(mess)
+
+    pass
 
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
@@ -498,7 +519,7 @@ def ramec_info4(ramec, ramec_number):
         # alalyze IPv4, IPcky a pocty uzlov
         print_IPv4_addresses(raw_ramec, protocol)
     elif protocol == "ARP":
-        collect_ARP(raw_ramec, ramec_number)
+        collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
         pass
 
     if next_protocol != None:
@@ -542,13 +563,14 @@ def main():
                 i += 1
 
         # Analyzovanie ARP komunikacie
-        print("Analýza ARP")
         '''
         for analyze_ARP_temp in analyze_ARP():
             print(analyze_ARP_temp)
         print()
         '''
-        print_ARP_communications(analyze_ARP())
+
+        if arp_ramce:
+            print_ARP_communications(analyze_ARP())
 
         # zoznam odosielajúcich uzlov
         print("IP adresy vysielajúcich uzlov:")
