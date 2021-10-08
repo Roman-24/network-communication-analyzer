@@ -17,7 +17,45 @@ from collections import Counter
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
+# potrebne pre ulohu 2
+def creat_protocols_dict():
+
+    protocol_dict = {} # create a Dictionary
+    with open(PROTOCOLS_LIST, 'r') as protocol_file:
+        while True:
+            line = protocol_file.readline()
+
+            if line.startswith("#"):
+                protocol_name = line.split()[0][1:]
+            elif not line:
+                break
+            else:
+                key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
+                protocol_dict[protocol_name, int(key, 16)] = value[:-1]
+                # protocol_dict[protocol_name, key] = value[:-1]
+        return protocol_dict
+
+'''
+    protocol_from_ramec = raw_ramec[(12):(14)].hex()
+
+    with open(PROTOCOLS_LIST, 'r') as protocol_file:
+        while True:
+            line = protocol_file.readline()
+
+            if line.startswith("#"):
+                continue
+            elif not line:
+                break
+            else:
+                protocol_key, protocol_name = line.split(" ", 1)
+                protocol_name = protocol_name[:-1]
+                if protocol_key == protocol_from_ramec:
+                    print(protocol_name.rstrip())
+    pass
+'''
+
 # potrebne globalne premenne:
+protocols_dict = creat_protocols_dict()
 ip_counter = Counter()
 
 tftp_ramce = []
@@ -115,46 +153,8 @@ def print_MAC_address(raw_ramec):
     print("Zdrojová MAC adresa: " + raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24])
     print("Cieľová MAC adresa: " + raw_ramec[0:2] + ":" + raw_ramec[2:4] + ":" + raw_ramec[4:6] + ":" + raw_ramec[6:8] + ":" + raw_ramec[8:10] + ":" + raw_ramec[10:12])
 
-
-# potrebne pre ulohu 2
-def creat_protocols_dict():
-
-    protocol_dict = {} # create a Dictionary
-    with open(PROTOCOLS_LIST, 'r') as protocol_file:
-        while True:
-            line = protocol_file.readline()
-
-            if line.startswith("#"):
-                protocol_name = line.split()[0][1:]
-            elif not line:
-                break
-            else:
-                key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
-                protocol_dict[protocol_name, int(key, 16)] = value[:-1]
-                # protocol_dict[protocol_name, key] = value[:-1]
-        return protocol_dict
-
-'''
-    protocol_from_ramec = raw_ramec[(12):(14)].hex()
-
-    with open(PROTOCOLS_LIST, 'r') as protocol_file:
-        while True:
-            line = protocol_file.readline()
-
-            if line.startswith("#"):
-                continue
-            elif not line:
-                break
-            else:
-                protocol_key, protocol_name = line.split(" ", 1)
-                protocol_name = protocol_name[:-1]
-                if protocol_key == protocol_from_ramec:
-                    print(protocol_name.rstrip())
-    pass
-'''
-
 # k ulohe 2
-def find_nested_protocol(raw_ramec, ramec_type, protocols_dict):
+def find_nested_protocol(raw_ramec, ramec_type):
 
     nested_protocol = ""
 
@@ -225,8 +225,7 @@ def ramec_info2(ramec, ramec_number):
     print_MAC_address(raw_ramec)
 
     # vnoreny protokol
-    protocols_dict = creat_protocols_dict()
-    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
+    protocol = find_nested_protocol(raw_ramec, ramec_type)
     print(protocol)
 
     hexdump(raw_ramec)
@@ -247,8 +246,7 @@ def ramec_info3(ramec, ramec_number):
     print_MAC_address(raw_ramec)
 
     # vnoreny protokol
-    protocols_dict = creat_protocols_dict()
-    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
+    protocol = find_nested_protocol(raw_ramec, ramec_type)
     print(protocol)
 
     # IPcky
@@ -271,7 +269,7 @@ def ramec_info3(ramec, ramec_number):
     pass
 
 # pomocne funkcie k ulohe 4
-def find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict):
+def find_next_protocol(raw_ramec, ramec_type, protocol):
 
     eth_2 = False
 
@@ -335,7 +333,7 @@ def print_IPv4_addresses(raw_ramec, protocol):
     pass
 
 # analyze ARP, TCP, UDP, ICMP
-def analyze_next_protocol(raw_ramec, next_protocol, protocols_dict):
+def analyze_next_protocol(raw_ramec, next_protocol):
 
     TCP = False
     UDP = False
@@ -399,7 +397,6 @@ def analyze_ARP():
 
     global arp_ramce
     flag_new = True
-    boaaa = arp_ramce
     communications = []
 
     for arp_ramec in arp_ramce:
@@ -420,7 +417,7 @@ def analyze_ARP():
                     flag_new = False
                     break
                     pass
-            
+
             else:
                 flag_new = True
 
@@ -476,12 +473,11 @@ def ramec_info4(ramec, ramec_number):
     # a v tom idem hladat dalej
 
     # vnoreny protokol
-    protocols_dict = creat_protocols_dict()
-    protocol = find_nested_protocol(raw_ramec, ramec_type, protocols_dict)
+    protocol = find_nested_protocol(raw_ramec, ramec_type)
     print(protocol)
 
     # hlbsia analyza protokolov
-    next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol, protocols_dict)
+    next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
 
     # analyze ARP, TCP, UDP, ICMP
     if protocol == "IPv4":
@@ -493,7 +489,7 @@ def ramec_info4(ramec, ramec_number):
 
     if next_protocol != None:
         print(next_protocol)
-        analyze_next_protocol(raw_ramec, next_protocol, protocols_dict)
+        analyze_next_protocol(raw_ramec, next_protocol)
 
     # hexdump(raw_ramec)
     print("\n", end="")
