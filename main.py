@@ -17,10 +17,9 @@ from collections import Counter
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
-# potrebne pre ulohu 2
 def creat_protocols_dict():
 
-    protocol_dict = {} # create a Dictionary
+    protocols_dict = {} # create a Dictionary
     with open(PROTOCOLS_LIST, 'r') as protocol_file:
         while True:
             line = protocol_file.readline()
@@ -31,9 +30,9 @@ def creat_protocols_dict():
                 break
             else:
                 key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
-                protocol_dict[protocol_name, int(key, 16)] = value[:-1]
-                # protocol_dict[protocol_name, key] = value[:-1]
-        return protocol_dict
+                protocols_dict[protocol_name, int(key, 16)] = value[:-1]
+
+        return protocols_dict
 
 '''
     protocol_from_ramec = raw_ramec[(12):(14)].hex()
@@ -53,6 +52,7 @@ def creat_protocols_dict():
                     print(protocol_name.rstrip())
     pass
 '''
+
 
 # potrebne globalne premenne:
 protocols_dict = creat_protocols_dict()
@@ -110,6 +110,12 @@ def useFiles():
 '''
 ***** Funkcie pre analýzu a rozbor komunikácie *****
 '''
+# najdenie key podla value
+def search_protocol_name(my_value):
+    try:
+        return [key for key, value in protocols_dict.items() if value == my_value]
+    except Exception:
+        return None
 
 def analyze_bajty(ramec):
     return raw(ramec)
@@ -132,20 +138,28 @@ def print_ramec_len(raw_ramec):
 # uloha 1c
 def analyze_ramec_type(raw_ramec):
 
+    # kontrolny vypisok
+    '''
+    print("Typ rámca: ", end="")
+    if raw_ramec[12] < 0x06:
+        if raw_ramec[14] == 0xFF:
+            print("Novell 802.3 RAW")
+        elif raw_ramec[14] == 0xAA:
+            print("IEEE 802.3 LLC + SNAP")
+        else:
+            print("IEEE 802.3 LLC")
+    else:
+        print("Ethernet II")
+    '''
+
     print("Typ rámca: ", end="")
 
     if raw_ramec[12] < 0x06:
-        if raw_ramec[14] == 0xFF:
-            ramec_type = "Novell 802.3 RAW"
-        elif raw_ramec[14] == 0xAA:
-            ramec_type = "IEEE 802.3 LLC + SNAP"
-        else:
-            ramec_type = "IEEE 802.3 LLC"
+        ramec_type = protocols_dict.get(("frameType", raw_ramec[14]), "IEEE 802.3 LLC")
     else:
         ramec_type = "Ethernet II"
 
     return ramec_type
-    pass
 
 # uloha 1d
 def print_MAC_address(raw_ramec):
