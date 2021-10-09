@@ -61,16 +61,15 @@ FTPd = False
 TFTP = False
 
 # vsetky_ramce_danej_komunikacie[ [prislusny ramec], [cislo prislusneho ramca] ]
-# arp_ramce = [[], []]
 arp_ramce = []
-icmp_ramce = [[], []]
-http_ramce = [[], []]
-https_ramce = [[], []]
-telnet_ramce = [[], []]
-ssh_ramce = [[], []]
-ftp_control_ramce = [[], []]
-ftp_data_ramce = [[], []]
-tftp_ramce = [[], []]
+icmp_ramce = []
+http_ramce = []
+https_ramce = []
+telnet_ramce = []
+ssh_ramce = []
+ftp_control_ramce = []
+ftp_data_ramce = []
+tftp_ramce = []
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
@@ -359,6 +358,7 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
         try:
             temp_str = "TCP" if TCP else "UDP"
             next_next_protocol = protocols_dict[temp_str, protocol_by_port]
+            mess += next_next_protocol + "\n"
             mess += f"zdrojový port: {source_port}" + "\n"
             mess += f"cieľový port: {destination_port}"
         except KeyError:
@@ -367,28 +367,22 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
         if next_next_protocol != None:
 
             if next_next_protocol == "HTTP":
-                http_ramce[0].append(mess)
-                http_ramce[1].append(ramec_number)
+                http_ramce.append(mess)
 
             elif next_next_protocol == "HTTPS":
-                https_ramce[0].append(mess)
-                https_ramce[1].append(ramec_number)
+                https_ramce.append(mess)
 
             elif next_next_protocol == "TELNET":
-                telnet_ramce[0].append(mess)
-                telnet_ramce[1].append(ramec_number)
+                telnet_ramce.append(mess)
 
             elif next_next_protocol == "SSH":
-                ssh_ramce[0].append(mess)
-                ssh_ramce[1].append(ramec_number)
+                ssh_ramce.append(mess)
 
             elif next_next_protocol == "FTP CONTROL":
-                ftp_control_ramce[0].append(mess)
-                ftp_control_ramce[1].append(ramec_number)
+                ftp_control_ramce.append(mess)
 
             elif next_next_protocol == "FTP DATA":
-                ftp_data_ramce[0].append(mess)
-                ftp_data_ramce[1].append(ramec_number)
+                ftp_data_ramce.append(mess)
 
     return mess
 
@@ -534,7 +528,7 @@ def print_ARP_communications(communications):
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
-    mess_info = f"rámec: {ramec_number}"
+    mess_info = f"rámec: {ramec_number}\n"
     raw_ramec = analyze_bajty(ramec)
 
     len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
@@ -579,19 +573,18 @@ def ramec_info4(ramec, ramec_number):
 
         if next_protocol == "ICMP":
             # Echo request, Echo reply, Time exceeded, a pod.
-            icmp_ramce[0].append(mess_info)
-            icmp_ramce[1].append(ramec_number)
+            icmp_ramce.append(mess_info)
             mess_info += analyze_ICMP(raw_ramec) + "\n"
             pass
         elif next_protocol == "TCP":
             # hladaj dalej
             # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info)
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info) + "\n"
             pass
         elif next_protocol == "UDP":
             # hladaj dalej
             # TFTP
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info)
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info) + "\n"
             pass
 
     print(mess_info)
@@ -599,6 +592,12 @@ def ramec_info4(ramec, ramec_number):
     # print("\n", end="")
     pass
 
+def print_communication_list(communication):
+
+    for i in communication:
+        print(i + "\n")
+
+    pass
 
 def main():
 
@@ -642,7 +641,7 @@ def main():
             print_ARP_communications(analyze_ARP())
 
         # zoznam odosielajúcich uzlov
-        print("IP adresy vysielajúcich uzlov:")
+        print("\nIP adresy vysielajúcich uzlov:")
         for i in ip_counter:
             print(i)
 
@@ -672,23 +671,23 @@ def main():
             user_input = int(user_input)
 
             if user_input == 1:
-                print(arp_ramce)
+                print_communication_list(arp_ramce)
             elif user_input == 2:
-                print(icmp_ramce)
+                print_communication_list(icmp_ramce)
             elif user_input == 3:
-                print(http_ramce)
+                print_communication_list(http_ramce)
             elif user_input == 4:
-                print(https_ramce)
+                print_communication_list(https_ramce)
             elif user_input == 5:
-                print(telnet_ramce)
+                print_communication_list(telnet_ramce)
             elif user_input == 6:
-                print(ssh_ramce)
+                print_communication_list(ssh_ramce)
             elif user_input == 7:
-                print(ftp_control_ramce)
+                print_communication_list(ftp_control_ramce)
             elif user_input == 8:
-                print(ftp_data_ramce)
+                print_communication_list(ftp_data_ramce)
             elif user_input == 9:
-                print(tftp_ramce)
+                print_communication_list(tftp_ramce)
 
         except ValueError:
             print("The input was not a valid integer")
