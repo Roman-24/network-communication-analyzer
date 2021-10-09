@@ -32,7 +32,7 @@ def creat_protocols_dict():
                 key, value = line.split(" ", 1)  # splitujem to cez medzeru a iba jedna vec potom nasleduje lebo nazov je jeden ks
                 protocols_dict[protocol_name, int(key, 16)] = value[:-1]
 
-        return protocols_dict
+    return protocols_dict
 
 
 # potrebne globalne premenne:
@@ -61,7 +61,7 @@ FTPd = False
 TFTP = False
 
 # vsetky_ramce_danej_komunikacie[ [prislusny ramec], [cislo prislusneho ramca] ]
-#arp_ramce = [[], []]
+# arp_ramce = [[], []]
 arp_ramce = []
 icmp_ramce = [[], []]
 http_ramce = [[], []]
@@ -142,9 +142,9 @@ def ramec_len(raw_ramec):
     return len_of_raw_ramec, len_of_raw_ramec_4
 
 def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
-    print(f"dĺžka rámca poskytnutá pcap API - {len_of_raw_ramec} B")
-    print(f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec_4} B")
-    pass
+    mess_1 = f"dĺžka rámca poskytnutá pcap API - {len_of_raw_ramec} B" + "\n"
+    mess_2 = f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec_4} B"
+    return mess_1 + mess_2
 
 def analyze_ramec_type(raw_ramec):
 
@@ -163,8 +163,6 @@ def analyze_ramec_type(raw_ramec):
         print("Ethernet II")
     '''
 
-    print("Typ rámca: ", end="")
-
     if raw_ramec[12] < 0x06:
         ramec_type = protocols_dict.get(("frameType", raw_ramec[14]), "IEEE 802.3 LLC")
     else:
@@ -180,8 +178,9 @@ def MAC_address(raw_ramec):
     return source_mac, target_mac
 
 def print_MAC_address(source_mac, target_mac):
-    print("Zdrojová MAC adresa: " + source_mac)
-    print("Cieľová MAC adresa: " + target_mac)
+    mess_1 = "Zdrojová MAC adresa: " + source_mac + "\n"
+    mess_2 = "Cieľová MAC adresa: " + target_mac
+    return mess_1 + mess_2
 
 # k ulohe 2
 def find_nested_protocol(raw_ramec, ramec_type):
@@ -232,21 +231,21 @@ def find_IP(raw_ramec):
 # vypisky k ulohe 3
 def ramec_info3(ramec, ramec_number):
 
-    print(f"rámec: {ramec_number}")
+    mess_info = f"rámec: {ramec_number}"
     raw_ramec = analyze_bajty(ramec)
 
     len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
-    print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4)
+    mess_info += print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4) + "\n"
 
     ramec_type = analyze_ramec_type(raw_ramec)
-    print(ramec_type)
+    mess = "Typ rámca: " + ramec_type + "\n"
 
     source_mac, target_mac = MAC_address(raw_ramec)
-    print_MAC_address(source_mac, target_mac)
+    mess_info += print_MAC_address(source_mac, target_mac) + "\n"
 
     # vnoreny protokol
     protocol = find_nested_protocol(raw_ramec, ramec_type)
-    print(protocol)
+    mess_info += protocol + "\n"
 
     # IPcky
     # zoznam IP adries vsetkych odosielajucich uzlov
@@ -261,9 +260,10 @@ def ramec_info3(ramec, ramec_number):
             elif ip_counter[source_ip] > 0:
                 ip_counter[source_ip] += 1
 
-        print(f"zdrojová IP adresa: {source_ip}")
-        print(f"cieľová IP adresa: {destination_ip}")
+        mess_info += f"zdrojová IP adresa: {source_ip}" + "\n"
+        mess_info += f"cieľová IP adresa: {destination_ip}"
 
+    print(mess_info)
     # hexdump(raw_ramec)
     print("\n", end="")
     pass
@@ -289,7 +289,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol):
                 try:
                     next_protocol = protocols_dict['ARP', raw_ramec[21]]
                 except KeyError:
-                    print(f"Neznáma ARP operácia {raw_ramec[21]}\n")
+                    next_protocol = f"Neznáma ARP operácia {raw_ramec[21]}\n"
 
             # v IPv4 hladam dalej TCP, UDP, ICMP
             if protocols_dict['Ethertypes', num1213] == "IPv4":
@@ -298,9 +298,9 @@ def find_next_protocol(raw_ramec, ramec_type, protocol):
                 try:
                     next_protocol = protocols_dict['IP', raw_ramec[23]]
                 except KeyError:
-                    print(f"Neznamy IP protokol {raw_ramec[23]}")
+                    next_protocol = f"Neznamy IP protokol {raw_ramec[23]}"
         except Exception as err:
-            print(err)
+            next_protocol = err
 
     return next_protocol
 
@@ -308,22 +308,24 @@ def print_IPv4_addresses(raw_ramec, protocol):
     # IPcky
     # zoznam IP adries vsetkych odosielajucich uzlov
     global ip_counter
+    mess = ""
     if protocol == "TCP" or protocol == "IPv4":
         source_ip, destination_ip = find_IP(raw_ramec)
 
+        # ip counter
         if protocol == "IPv4":
             if ip_counter[source_ip] == 0:
                 ip_counter[source_ip] = 1
             elif ip_counter[source_ip] > 0:
                 ip_counter[source_ip] += 1
 
-        print(f"zdrojová IP adresa: {source_ip}")
-        print(f"cieľová IP adresa: {destination_ip}")
+        mess = f"zdrojová IP adresa: {source_ip}" + "\n"
+        mess += f"cieľová IP adresa: {destination_ip}"
 
-    pass
+    return mess
 
 # hlbsie analyzuje TCP, UDP, ICMP
-def analyze_next_protocol(raw_ramec, next_protocol, ramec_number):
+def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
 
     global TCP
     global UDP
@@ -357,41 +359,38 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number):
         try:
             temp_str = "TCP" if TCP else "UDP"
             next_next_protocol = protocols_dict[temp_str, protocol_by_port]
+            mess += f"zdrojový port: {source_port}" + "\n"
+            mess += f"cieľový port: {destination_port}"
         except KeyError:
-            print("Neznámy port pre určenie protokolu")
+            mess += "Neznámy port pre určenie protokolu" + "\n"
 
         if next_next_protocol != None:
 
             if next_next_protocol == "HTTP":
-                http_ramce[0].append(raw_ramec)
+                http_ramce[0].append(mess)
                 http_ramce[1].append(ramec_number)
 
             elif next_next_protocol == "HTTPS":
-                https_ramce[0].append(raw_ramec)
+                https_ramce[0].append(mess)
                 https_ramce[1].append(ramec_number)
 
             elif next_next_protocol == "TELNET":
-                telnet_ramce[0].append(raw_ramec)
+                telnet_ramce[0].append(mess)
                 telnet_ramce[1].append(ramec_number)
 
             elif next_next_protocol == "SSH":
-                ssh_ramce[0].append(raw_ramec)
+                ssh_ramce[0].append(mess)
                 ssh_ramce[1].append(ramec_number)
 
             elif next_next_protocol == "FTP CONTROL":
-                ftp_control_ramce[0].append(raw_ramec)
+                ftp_control_ramce[0].append(mess)
                 ftp_control_ramce[1].append(ramec_number)
 
             elif next_next_protocol == "FTP DATA":
-                ftp_data_ramce[0].append(raw_ramec)
+                ftp_data_ramce[0].append(mess)
                 ftp_data_ramce[1].append(ramec_number)
 
-            print(next_next_protocol)
-
-        print(f"zdrojový port: {source_port}")
-        print(f"cieľový port: {destination_port}")
-
-    return
+    return mess
 
 def analyze_ICMP(raw_ramec):
     index = 14 + (raw_ramec[14] % 16) * 4
@@ -535,17 +534,17 @@ def print_ARP_communications(communications):
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
-    print(f"rámec: {ramec_number}")
+    mess_info = f"rámec: {ramec_number}"
     raw_ramec = analyze_bajty(ramec)
 
     len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
-    print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4)
+    mess_info += print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4) + "\n"
 
     ramec_type = analyze_ramec_type(raw_ramec)
-    print(ramec_type)
+    mess_info += "Typ rámca: " + ramec_type + "\n"
 
     source_mac, target_mac = MAC_address(raw_ramec)
-    print_MAC_address(source_mac, target_mac)
+    mess_info += print_MAC_address(source_mac, target_mac) + "\n"
 
     # zatial mam toto
     '''
@@ -558,9 +557,9 @@ def ramec_info4(ramec, ramec_number):
 
     # vnoreny protokol pre Ethernet II
     protocol = find_nested_protocol(raw_ramec, ramec_type)
+    mess_info += protocol + "\n"
     # IP (IPv4 alebo IPv6)
     # ARP
-    print(protocol)
 
     # analyze ARP, TCP, UDP, ICMP
     if protocol == "ARP":
@@ -569,34 +568,35 @@ def ramec_info4(ramec, ramec_number):
 
     if protocol == "IPv4":
         # alalyze IPv4, IPcky a pocty uzlov
-        print_IPv4_addresses(raw_ramec, protocol)
+        mess_info += print_IPv4_addresses(raw_ramec, protocol) + "\n"
 
     # hlbsia analyza protokolov
     # moze byt: ICMP, TCP, UDP
     next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
+    mess_info += next_protocol + "\n"
 
     if next_protocol != None:
-        print(next_protocol)
 
         if next_protocol == "ICMP":
             # Echo request, Echo reply, Time exceeded, a pod.
-            icmp_ramce[0].append(raw_ramec)
+            icmp_ramce[0].append(mess_info)
             icmp_ramce[1].append(ramec_number)
-            print(analyze_ICMP(raw_ramec))
+            mess_info += analyze_ICMP(raw_ramec) + "\n"
             pass
         elif next_protocol == "TCP":
             # hladaj dalej
             # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
-            analyze_next_protocol(raw_ramec, next_protocol, ramec_number)
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info)
             pass
         elif next_protocol == "UDP":
             # hladaj dalej
             # TFTP
-            analyze_next_protocol(raw_ramec, next_protocol, ramec_number)
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info)
             pass
 
+    print(mess_info)
     # hexdump(raw_ramec)
-    print("\n", end="")
+    # print("\n", end="")
     pass
 
 
