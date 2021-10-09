@@ -60,15 +60,17 @@ FTPr = False
 FTPd = False
 TFTP = False
 
+# vsetky_ramce_danej_komunikacie[ [prislusny ramec], [cislo prislusneho ramca] ]
+#arp_ramce = [[], []]
 arp_ramce = []
-icmp_ramce = []
-http_ramce = []
-https_ramce = []
-telnet_ramce = []
-ssh_ramce = []
-ftp_control_ramce = []
-ftp_data_ramce = []
-tftp_ramce = []
+icmp_ramce = [[], []]
+http_ramce = [[], []]
+https_ramce = [[], []]
+telnet_ramce = [[], []]
+ssh_ramce = [[], []]
+ftp_control_ramce = [[], []]
+ftp_data_ramce = [[], []]
+tftp_ramce = [[], []]
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
@@ -321,7 +323,7 @@ def print_IPv4_addresses(raw_ramec, protocol):
     pass
 
 # hlbsie analyzuje TCP, UDP, ICMP
-def analyze_next_protocol(raw_ramec, next_protocol):
+def analyze_next_protocol(raw_ramec, next_protocol, ramec_number):
 
     global TCP
     global UDP
@@ -359,12 +361,35 @@ def analyze_next_protocol(raw_ramec, next_protocol):
             print("Neznámy port pre určenie protokolu")
 
         if next_next_protocol != None:
+
+            if next_next_protocol == "HTTP":
+                http_ramce[0].append(raw_ramec)
+                http_ramce[1].append(ramec_number)
+
+            elif next_next_protocol == "HTTPS":
+                https_ramce[0].append(raw_ramec)
+                https_ramce[1].append(ramec_number)
+
+            elif next_next_protocol == "TELNET":
+                telnet_ramce[0].append(raw_ramec)
+                telnet_ramce[1].append(ramec_number)
+
+            elif next_next_protocol == "SSH":
+                ssh_ramce[0].append(raw_ramec)
+                ssh_ramce[1].append(ramec_number)
+
+            elif next_next_protocol == "FTP CONTROL":
+                ftp_control_ramce[0].append(raw_ramec)
+                ftp_control_ramce[1].append(ramec_number)
+
+            elif next_next_protocol == "FTP DATA":
+                ftp_data_ramce[0].append(raw_ramec)
+                ftp_data_ramce[1].append(ramec_number)
+
             print(next_next_protocol)
 
         print(f"zdrojový port: {source_port}")
         print(f"cieľový port: {destination_port}")
-
-        # sem este nejaky vypis podla portov ci co to
 
     return
 
@@ -555,17 +580,19 @@ def ramec_info4(ramec, ramec_number):
 
         if next_protocol == "ICMP":
             # Echo request, Echo reply, Time exceeded, a pod.
+            icmp_ramce[0].append(raw_ramec)
+            icmp_ramce[1].append(ramec_number)
             print(analyze_ICMP(raw_ramec))
             pass
         elif next_protocol == "TCP":
             # hladaj dalej
             # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
-            analyze_next_protocol(raw_ramec, next_protocol)
+            analyze_next_protocol(raw_ramec, next_protocol, ramec_number)
             pass
         elif next_protocol == "UDP":
             # hladaj dalej
             # TFTP
-            analyze_next_protocol(raw_ramec, next_protocol)
+            analyze_next_protocol(raw_ramec, next_protocol, ramec_number)
             pass
 
     # hexdump(raw_ramec)
@@ -624,9 +651,57 @@ def main():
         print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
         reset_counter()
 
-        tftp_ramce.clear()
+        print("Aké rámce si praješ vypísať? \n" +
+              "1. ARP\n" +
+              "2. ICMP\n" +
+              "3. HTTP\n" +
+              "4. HTTPS\n" +
+              "5. TELNET\n" +
+              "6. SSH\n" +
+              "7. FTP CONTROL\n" +
+              "8. FTP DATA\n" +
+              "9. TFTP\n" +
+              "e žiadne")
+
+        user_input = input()
+
+        if (user_input == "e"):
+            print("Tak možno nabudúce..")
+
+        try:
+            user_input = int(user_input)
+
+            if user_input == 1:
+                print(arp_ramce)
+            elif user_input == 2:
+                print(icmp_ramce)
+            elif user_input == 3:
+                print(http_ramce)
+            elif user_input == 4:
+                print(https_ramce)
+            elif user_input == 5:
+                print(telnet_ramce)
+            elif user_input == 6:
+                print(ssh_ramce)
+            elif user_input == 7:
+                print(ftp_control_ramce)
+            elif user_input == 8:
+                print(ftp_data_ramce)
+            elif user_input == 9:
+                print(tftp_ramce)
+
+        except ValueError:
+            print("The input was not a valid integer")
+
         arp_ramce.clear()
         icmp_ramce.clear()
+        http_ramce.clear()
+        https_ramce.clear()
+        telnet_ramce.clear()
+        ssh_ramce.clear()
+        ftp_control_ramce.clear()
+        ftp_data_ramce.clear()
+        tftp_ramce.clear()
 
         '''
         for i in range(len(arp_ramce)):
