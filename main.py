@@ -697,12 +697,14 @@ def main():
         print("Aké rámce si praješ vypísať? \n" +
               "1. ARP\n" +
               "2. ICMP\n" +
+
               "3. HTTP\n" +
               "4. HTTPS\n" +
               "5. TELNET\n" +
               "6. SSH\n" +
               "7. FTP CONTROL\n" +
               "8. FTP DATA\n" +
+
               "9. TFTP\n" +
               "e žiadne")
 
@@ -718,6 +720,7 @@ def main():
                 print_communication_list(arp_ramce)
             elif user_input == 2:
                 print_communication_list(icmp_ramce)
+
             elif user_input == 3:
                 print_communication_list(http_ramce)
             elif user_input == 4:
@@ -730,6 +733,7 @@ def main():
                 print_communication_list(ftp_control_ramce)
             elif user_input == 8:
                 print_communication_list(ftp_data_ramce)
+
             elif user_input == 9:
                 print_communication_list(tftp_ramce)
 
