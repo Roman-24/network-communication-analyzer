@@ -60,15 +60,27 @@ FTPr = False
 FTPd = False
 TFTP = False
 
-# vsetky_ramce_danej_komunikacie[ [prislusny ramec], [cislo prislusneho ramca] ]
 arp_ramce = []
 icmp_ramce = []
+
+# vzot slovnik na parsovanie komunikacii
+com_info_dict = {
+    "source_ip": None,
+    "target_ip": None,
+    "source_port": None,
+    "target_port": None,
+    "flags": [],
+}
+
+# vsetky_ramce_danej_komunikacie[ poradove cislo, [prislusny ramec, dict_info, mess_info] ]
 http_ramce = []
 https_ramce = []
 telnet_ramce = []
 ssh_ramce = []
 ftp_control_ramce = []
 ftp_data_ramce = []
+
+# tu netreba nic riesit
 tftp_ramce = []
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
@@ -301,7 +313,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol):
         except Exception as err:
             next_protocol = err
 
-    return next_protocol
+    return str(next_protocol)
 
 def print_IPv4_addresses(raw_ramec, protocol):
     # IPcky
@@ -324,7 +336,7 @@ def print_IPv4_addresses(raw_ramec, protocol):
     return mess
 
 # hlbsie analyzuje TCP, UDP, ICMP
-def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
+def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flags):
 
     global TCP
     global UDP
@@ -349,9 +361,8 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
     if TCP or UDP:
 
         # zistenie portov pre TCP, UDP
-        raw_ramec = raw_ramec.hex()
-        source_port = int(raw_ramec[34*2:36*2], 16)
-        destination_port = int(raw_ramec[36*2:38*2], 16)
+        source_port = int(raw_ramec[34:36].hex(), 16)
+        destination_port = int(raw_ramec[36:38].hex(), 16)
 
         protocol_by_port = min(source_port, destination_port)
 
@@ -366,23 +377,32 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess):
 
         if next_next_protocol != None:
 
+            source_ip, target_ip = find_IP(raw_ramec)
+            ramec_dict_info = {
+                "source_ip": source_ip,
+                "target_ip": target_ip,
+                "source_port": source_port,
+                "target_port": destination_port,
+                "flags": tcp_flags,
+            }
+
             if next_next_protocol == "HTTP":
-                http_ramce.append(mess)
+                http_ramce.append([raw_ramec, ramec_dict_info, mess])
 
             elif next_next_protocol == "HTTPS":
-                https_ramce.append(mess)
+                https_ramce.append([raw_ramec, ramec_dict_info, mess])
 
             elif next_next_protocol == "TELNET":
-                telnet_ramce.append(mess)
+                telnet_ramce.append([raw_ramec, ramec_dict_info, mess])
 
             elif next_next_protocol == "SSH":
-                ssh_ramce.append(mess)
+                ssh_ramce.append([raw_ramec, ramec_dict_info, mess])
 
             elif next_next_protocol == "FTP CONTROL":
-                ftp_control_ramce.append(mess)
+                ftp_control_ramce.append([raw_ramec, ramec_dict_info, mess])
 
             elif next_next_protocol == "FTP DATA":
-                ftp_data_ramce.append(mess)
+                ftp_data_ramce.append([raw_ramec, ramec_dict_info, mess])
 
     return mess
 
@@ -496,10 +516,14 @@ def analyze_ARP():
 
 def print_ARP_communications(communications):
 
-    print("***** Analýza ARP *****")
+    i = 0
+
     for communication in communications:
 
         if(len(communication[1]) > 0):
+
+            request, request_ip = True, communication[0]["target_protocol_address"]
+
             mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
             mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
             mess += "rámec " + str(communication[0]["ramec_number"]) + "\n"
@@ -522,6 +546,10 @@ def print_ARP_communications(communications):
 
             print(mess)
             mess = ""
+
+            if request_ip == communication[0]["target_protocol_address"]:
+                i += 1
+                print("Komunikácia č. ", i)
 
     pass
 
@@ -621,14 +649,14 @@ def ramec_info4(ramec, ramec_number):
             # hladaj dalej
             # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
 
-            analyze_flags(raw_ramec)
+            tcp_flags = analyze_flags(raw_ramec)
 
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info) + "\n"
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, tcp_flags) + "\n"
             pass
         elif next_protocol == "UDP":
             # hladaj dalej
             # TFTP
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info) + "\n"
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, None) + "\n"
             pass
 
     print(mess_info)
@@ -640,6 +668,17 @@ def print_communication_list(communication):
 
     for i in communication:
         print(i + "\n")
+
+    pass
+
+
+
+def print_tcp_communications(my_communications):
+
+
+    print("***** Komunikacia kompletna *****")
+
+    print("***** Komunikacia nekompletna *****")
 
     pass
 
@@ -674,16 +713,6 @@ def main():
                 ramec_info4(ramec, ramec_number)
                 i += 1
 
-        # Analyzovanie ARP komunikacie
-        '''
-        for analyze_ARP_temp in analyze_ARP():
-            print(analyze_ARP_temp)
-        print()
-        '''
-
-        if arp_ramce:
-            print_ARP_communications(analyze_ARP())
-
         # zoznam odosielajúcich uzlov
         print("\nIP adresy vysielajúcich uzlov:")
         for i in ip_counter:
@@ -717,22 +746,28 @@ def main():
             user_input = int(user_input)
 
             if user_input == 1:
-                print_communication_list(arp_ramce)
+                print("***** Analýza ARP *****\n")
+                number = 0
+                temp_arp_comms = analyze_ARP()
+                if len(temp_arp_comms) > 0:
+                    print_ARP_communications(temp_arp_comms)
+                else:
+                    print("Žiadne ARP komunikácie")
             elif user_input == 2:
                 print_communication_list(icmp_ramce)
 
             elif user_input == 3:
-                print_communication_list(http_ramce)
+                print_tcp_communications(http_ramce)
             elif user_input == 4:
-                print_communication_list(https_ramce)
+                print_tcp_communications(https_ramce)
             elif user_input == 5:
-                print_communication_list(telnet_ramce)
+                print_tcp_communications(telnet_ramce)
             elif user_input == 6:
-                print_communication_list(ssh_ramce)
+                print_tcp_communications(ssh_ramce)
             elif user_input == 7:
-                print_communication_list(ftp_control_ramce)
+                print_tcp_communications(ftp_control_ramce)
             elif user_input == 8:
-                print_communication_list(ftp_data_ramce)
+                print_tcp_communications(ftp_data_ramce)
 
             elif user_input == 9:
                 print_communication_list(tftp_ramce)
