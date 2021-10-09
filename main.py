@@ -525,6 +525,47 @@ def print_ARP_communications(communications):
 
     pass
 
+
+def analyze_flags(raw_ramec):
+
+    info = []
+
+    ack = int(raw_ramec[42:46].hex(), 16)
+    sn = int(raw_ramec[38:42].hex(), 16)
+
+    raw_ramec_temp = raw_ramec.hex()
+    # IP_total_length - IP_header_length - TCP_header_length
+    length = int(raw_ramec_temp[16 * 2:18 * 2], 16) - int(raw_ramec_temp[(14 * 2) + 1:15 * 2], 16) * 4 - int(raw_ramec_temp[46 * 2:(47 * 2) - 1], 16) * 4
+
+    info.append(ack)
+    info.append(sn)
+    info.append(length)
+
+    #flags decimalne
+    FIN = 1
+    SYN = 2
+    RST = 4
+    PSH = 8
+    ACK = 16
+
+    flags = []
+    flag = int(raw_ramec[46+1:48].hex(), 16)
+
+    if flag & ACK:
+        flags.append('ACK')
+    if flag & PSH:
+        flags.append('PSH')
+    if flag & RST:
+        flags.append('RST')
+    if flag & SYN:
+        flags.append('SYN')
+    if flag & FIN:
+        flags.append('FIN')
+    if (len(flags) == 0):
+        flags.append('OTHERS')
+
+    return flags
+
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
@@ -579,6 +620,9 @@ def ramec_info4(ramec, ramec_number):
         elif next_protocol == "TCP":
             # hladaj dalej
             # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
+
+            analyze_flags(raw_ramec)
+
             mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info) + "\n"
             pass
         elif next_protocol == "UDP":
