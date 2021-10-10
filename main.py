@@ -341,13 +341,10 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
     next_next_protocol = None
 
     if next_protocol == "TCP":
-        # bude pokracovat vypisom TCP
         TCP = True
     if next_protocol == "UDP":
-        # bude pokracovat vypisom UDP
         UDP = True
     if next_protocol == "ICMP":
-        # bude pokracovat vypisom ICMP
         ICMP = True
 
     if TCP or UDP:
@@ -355,7 +352,6 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
         # zistenie portov pre TCP, UDP
         source_port = int(raw_ramec[34:36].hex(), 16)
         destination_port = int(raw_ramec[36:38].hex(), 16)
-
         protocol_by_port = min(source_port, destination_port)
 
         try:
@@ -405,7 +401,7 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
 
 def analyze_ICMP(raw_ramec):
     index = 14 + (raw_ramec[14] % 16) * 4
-    return protocols_dict.get( ("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
+    return protocols_dict.get(("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
 
 tftp_ports = []
 def analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port):
@@ -521,8 +517,6 @@ def analyze_ARP():
                 communications.append(one_communication)
                 pass
 
-            pass
-
     return communications
 
 def print_ARP_communications(communications):
@@ -537,7 +531,6 @@ def print_ARP_communications(communications):
 
             for i in communication[2]:
                 if i == 1:
-
                     for i_temp in arp_ramce:
                         if i_temp["ramec_number"] == communication[1][index]:
                             my_ramec = i_temp["raw_ramec"]
@@ -557,7 +550,6 @@ def print_ARP_communications(communications):
             index = 0
             for i in communication[2]:
                 if i == 2:
-
                     for i_temp in arp_ramce:
                         if i_temp["ramec_number"] == communication[1][index]:
                             my_ramec = i_temp["raw_ramec"]
@@ -651,7 +643,6 @@ def ramec_info4(ramec, ramec_number):
     # analyze ARP, TCP, UDP, ICMP
     if protocol == "ARP":
         collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
-        pass
 
     if protocol == "IPv4":
         # alalyze IPv4, IPcky a pocty uzlov
@@ -696,7 +687,6 @@ def print_communication_list(communication):
 
 
 def print_tcp_communications(my_communications):
-
 
     print("***** Komunikacia kompletna *****")
 
@@ -757,7 +747,7 @@ def main():
               "8. FTP DATA\n" +
 
               "9. TFTP\n" +
-              "e žiadne")
+              "e žiadne\n")
 
         user_input = input()
 
@@ -807,10 +797,6 @@ def main():
         ftp_data_ramce.clear()
         tftp_ramce.clear()
 
-        '''
-        for i in range(len(arp_ramce)):
-            print(arp_ramce[i])
-        '''
         pcap_file_for_use = useFiles()
 
 def reset_counter():
