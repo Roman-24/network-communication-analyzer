@@ -62,6 +62,7 @@ TFTP = False
 
 arp_ramce = []
 icmp_ramce = []
+tftp_ramce = []
 
 # vzot slovnik na parsovanie komunikacii
 com_info_dict = {
@@ -79,9 +80,6 @@ telnet_ramce = []
 ssh_ramce = []
 ftp_control_ramce = []
 ftp_data_ramce = []
-
-# tu netreba nic riesit
-tftp_ramce = []
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
 def useFiles():
@@ -233,9 +231,8 @@ def find_nested_protocol(raw_ramec, ramec_type):
 
 # potebne k ulohe 3, uloha 3
 def find_IP(raw_ramec):
-    raw_ramec = raw_ramec.hex()
-    source_ip = str(int(raw_ramec[26 * 2:27 * 2], 16)) + "." + str(int(raw_ramec[27 * 2:28 * 2], 16)) + "." + str(int(raw_ramec[28 * 2:29 * 2], 16)) + "." + str(int(raw_ramec[29 * 2:30 * 2], 16))
-    destination_ip = str(int(raw_ramec[30 * 2:31 * 2], 16)) + "." + str(int(raw_ramec[31 * 2:32 * 2], 16)) + "." + str(int(raw_ramec[32 * 2:33 * 2], 16)) + "." + str(int(raw_ramec[33 * 2:34 * 2], 16))
+    source_ip = str(int(raw_ramec[26:27].hex(), 16)) + "." + str(int(raw_ramec[27:28].hex(), 16)) + "." + str(int(raw_ramec[28:29].hex(), 16)) + "." + str(int(raw_ramec[29:30].hex(), 16))
+    destination_ip = str(int(raw_ramec[30:31].hex(), 16)) + "." + str(int(raw_ramec[31:32].hex(), 16)) + "." + str(int(raw_ramec[32:33].hex(), 16)) + "." + str(int(raw_ramec[33:34].hex(), 16))
     return source_ip, destination_ip
 
 
@@ -353,11 +350,6 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
         # bude pokracovat vypisom ICMP
         ICMP = True
 
-
-    if UDP:
-        analyze_TFTP(raw_ramec)
-        pass
-
     if TCP or UDP:
 
         # zistenie portov pre TCP, UDP
@@ -374,6 +366,11 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
             mess += f"cieľový port: {destination_port}"
         except KeyError:
             mess += "Neznámy port pre určenie protokolu" + "\n"
+
+        if UDP:
+            analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port)
+            tftp_ramce.append([ ramec_number, source_port, destination_port, mess, raw_ramec])
+            pass
 
         if next_next_protocol != None:
 
@@ -410,42 +407,50 @@ def analyze_ICMP(raw_ramec):
     index = 14 + (raw_ramec[14] % 16) * 4
     return protocols_dict.get( ("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
 
-def analyze_TFTP(raw_ramec):
+tftp_ports = []
+def analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port):
 
-    tftp_comunication = []
-    tftp_ports = []
-    index = 14 + (raw_ramec[14] % 16) * 4
-    source_port = raw_ramec[index] * 256 + raw_ramec[index + 1]
-    destination_port = raw_ramec[index + 2] * 256 + raw_ramec[index + 3]
-
+    sixnine = int("0x45", 16)
+    global tftp_ports
     porty = [source_port, destination_port]
+    porty.sort()
 
-    sixnine = 0x45
     if destination_port == sixnine:
         tftp_ports.append(porty)
     else:
-        for temp in tftp_ports:
-            if temp[0] != destination_port and temp[1] == source_port:
-                if destination_port == temp[0] and temp[1] == 0x45:
-                    temp[1] = sixnine
-                elif temp[0] == 0x45:
-                    temp[0] = sixnine
-                temp.sort()
+        for item in tftp_ports:
+            if item != None:
+                if destination_port in item:
+                    if not source_port in item:
+                        if destination_port == item[0] and item[1] == sixnine:
+                            item[1] = source_port
+                        elif item[0] == sixnine:
+                            item[0] = source_port
+                        item.sort()
 
-    mess = ""
-    try:
-        mess += "{}\n".format(protocols_dict['UDP', min(source_port, destination_port)])
-    except KeyError:
-        if porty in tftp_ports:
-            mess += "TFTP\n"
-        else:
-            mess += "Nerozpoznaný port\n"
-
-    mess += "zdrojový port: {}\n".format(source_port)
-    mess += "cieľový port: {}\n".format(destination_port)
-
-    # print(mess)
     pass
+
+def print_tftp_communication():
+    global tftp_ramce
+    global tftp_ports
+
+    count = 1
+    print("***** Výpis TFTP *****\n")
+    for temp_ports in tftp_ports:
+
+        print("Komunikácia č. ", count)
+        # tftp_ramce -> [ ramec_number, source_port, destination_port, mess, raw_ramec ]
+        for ramec in tftp_ramce:
+            if ramec[1] in temp_ports or ramec[2] in temp_ports:
+                print(ramec[3])
+                hexdump(ramec[4])
+                print()
+                tftp_ramce.remove(ramec)
+                pass
+
+        count += 1
+    pass
+
 
 def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
     raw_ramec_hex = raw_ramec.hex()
@@ -660,7 +665,7 @@ def ramec_info4(ramec, ramec_number):
     if next_protocol != None:
 
         if next_protocol == "ICMP":
-            # Echo request, Echo reply, Time exceeded, a pod.
+            # Echo request, Echo reply, a pod.
             icmp_ramce.append(mess_info)
             mess_info += analyze_ICMP(raw_ramec) + "\n"
             pass
@@ -684,10 +689,8 @@ def ramec_info4(ramec, ramec_number):
     pass
 
 def print_communication_list(communication):
-
     for i in communication:
         print(i + "\n")
-
     pass
 
 
@@ -771,7 +774,7 @@ def main():
                 if len(temp_arp_comms) > 0:
                     print_ARP_communications(temp_arp_comms)
                 else:
-                    print("Žiadne ARP komunikácie")
+                    print("Žiadne ARP komunikácie\n")
             elif user_input == 2:
                 print_communication_list(icmp_ramce)
 
@@ -789,7 +792,7 @@ def main():
                 print_tcp_communications(ftp_data_ramce)
 
             elif user_input == 9:
-                print_communication_list(tftp_ramce)
+                print_tftp_communication()
 
         except ValueError:
             print("The input was not a valid integer")
