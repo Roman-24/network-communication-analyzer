@@ -459,6 +459,7 @@ def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
         "target_protocol_address": str(int(raw_ramec_hex[38*2:39*2], 16)) + "." + str(int(raw_ramec_hex[39*2:40*2], 16)) + "." + str(int(raw_ramec_hex[40*2:41*2], 16)) + "." + str(int(raw_ramec_hex[41*2:42*2], 16)),
         "ramec_type": ramec_type,
         "protocol": protocol,
+        "raw_ramec": raw_ramec,
     })
     pass
 
@@ -476,13 +477,15 @@ def analyze_ARP():
             # ak je to request tak hladam v one_communication ci som nemal nieco co davalo odpoved
             if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
                     iterator_com[1].append(arp_ramec["ramec_number"])
+                    iterator_com[2].append(1)
                     flag_new = False
                     break
                     pass
 
             # reply
-            elif arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["target_hardware_address"]:
-                    iterator_com[2].append(arp_ramec["ramec_number"])
+            elif arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["target_hardware_address"] == iterator_com[0]["source_hardware_address"]:
+                    iterator_com[1].append(arp_ramec["ramec_number"])
+                    iterator_com[2].append(2)
                     flag_new = False
                     break
                     pass
@@ -493,20 +496,23 @@ def analyze_ARP():
         # vytvorenie novej komunikacie
         if flag_new:
 
-            # arp_ramec, requests, replies
-            one_communication = [[], [], []]
+            # dict, cisla ramcov, operation
+            one_communication = [ {}, [], [] ]
 
             # request
             if arp_ramec["operation"] == 1:
                 one_communication[0] = arp_ramec
                 one_communication[1].append(arp_ramec["ramec_number"])
+                one_communication[2].append(1)
                 communications.append(one_communication)
                 pass
 
             # reply
+            # nemalo by nikdy nastat
             if arp_ramec["operation"] == 2:
                 one_communication[0] = arp_ramec
-                one_communication[2].append(arp_ramec["ramec_number"])
+                one_communication[1].append(arp_ramec["ramec_number"])
+                one_communication[2].append(2)
                 communications.append(one_communication)
                 pass
 
@@ -516,41 +522,54 @@ def analyze_ARP():
 
 def print_ARP_communications(communications):
 
-    i = 0
-
+    count = 1
     for communication in communications:
 
         if(len(communication[1]) > 0):
 
-            request, request_ip = True, communication[0]["target_protocol_address"]
+            print("Komunikácia č. ", count)
+            index = 0
 
-            mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
-            mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
-            mess += "rámec " + str(communication[0]["ramec_number"]) + "\n"
-            mess += communication[0]["ramec_type"] + "\n"
-            mess += communication[0]["protocol"] + "\n"
-            mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
-            mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+            for i in communication[2]:
+                if i == 1:
 
-            print(mess)
-            mess = ""
+                    for i_temp in arp_ramce:
+                        if i_temp["ramec_number"] == communication[1][index]:
+                            my_ramec = i_temp["raw_ramec"]
 
-        if (len(communication[2]) > 0):
-            mess = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
-            mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
-            mess += "rámec " + str(communication[0]["ramec_number"]) + "\n"
-            mess += communication[0]["ramec_type"] + "\n"
-            mess += communication[0]["protocol"] + "\n"
-            mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
-            mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+                    mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
+                    mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
+                    mess += "rámec " + str(communication[1][index]) + "\n"
+                    mess += communication[0]["ramec_type"] + "\n"
+                    mess += communication[0]["protocol"] + "\n"
+                    mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
+                    mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"]
+                    print(mess)
+                    hexdump(my_ramec)
+                    print()
+                index += 1
 
-            print(mess)
-            mess = ""
+            index = 0
+            for i in communication[2]:
+                if i == 2:
 
-            if request_ip == communication[0]["target_protocol_address"]:
-                i += 1
-                print("Komunikácia č. ", i)
+                    for i_temp in arp_ramce:
+                        if i_temp["ramec_number"] == communication[1][index]:
+                            my_ramec = i_temp["raw_ramec"]
 
+                    mess_late = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+                    mess_late += "Zdrojová IP: " + communication[0]["target_protocol_address"] + ", Cieľová IP: " + communication[0]["source_protocol_address"] + "\n"
+                    mess_late += "rámec " + str(communication[1][index]) + "\n"
+                    mess_late += communication[0]["ramec_type"] + "\n"
+                    mess_late += communication[0]["protocol"] + "\n"
+                    mess_late += "Zdrojová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+                    mess_late += "Cieľová MAC adresa: " + communication[0]["source_hardware_address"]
+                    print(mess_late)
+                    hexdump(my_ramec)
+                    print()
+                index += 1
+
+            count += 1
     pass
 
 
