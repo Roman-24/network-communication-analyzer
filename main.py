@@ -82,8 +82,9 @@ ftp_control_ramce = []
 ftp_data_ramce = []
 
 # citanie ciest k suborom z pomocneho suboru PCAP_FILES_LIST
-def useFiles():
+def useFiles( output_printer, output_file):
 
+    sys.stdout = output_printer
     # z relativnej cesty k suboru sa vytvori relativna cesta zacinajuca v priecinku kodu
     path_to_pcap_file = os.path.join(os.path.dirname(__file__), PCAP_FILES_LIST)
 
@@ -94,6 +95,7 @@ def useFiles():
     pcap_files_paths = temp_file.readlines()
     temp_file.close()
 
+
     for i, line in enumerate(pcap_files_paths, 1):
         print(f"{i}: {line}", end="")
 
@@ -101,10 +103,13 @@ def useFiles():
         print("Pre ukoncenie programu napis: e")
         print("Pre vlastnu cestu k suboru zadaj: 0")
         print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths)}(vratane)")
-
+        sys.stdout = output_file
         user_input = input()
 
         if (user_input == "e"):
+            print("Exit..")
+            output_file.close()
+            sys.stdout = output_printer
             print("Exit..")
             exit()
 
@@ -432,19 +437,22 @@ def print_tftp_communication():
 
     count = 1
     print("***** Výpis TFTP *****\n")
-    for temp_ports in tftp_ports:
+    if len(tftp_ports) > 0:
+        for temp_ports in tftp_ports:
 
-        print("Komunikácia č. ", count)
-        # tftp_ramce -> [ ramec_number, source_port, destination_port, mess, raw_ramec ]
-        for ramec in tftp_ramce:
-            if ramec[1] in temp_ports or ramec[2] in temp_ports:
-                print(ramec[3])
-                hexdump(ramec[4])
-                print()
-                tftp_ramce.remove(ramec)
-                pass
+            print("Komunikácia č. ", count)
+            # tftp_ramce -> [ ramec_number, source_port, destination_port, mess, raw_ramec ]
+            for ramec in tftp_ramce:
+                if ramec[1] in temp_ports or ramec[2] in temp_ports:
+                    print(ramec[3])
+                    hexdump(ramec[4])
+                    print()
+                    tftp_ramce.remove(ramec)
+                    pass
 
-        count += 1
+            count += 1
+    else:
+        print("Žiadne TFTP komunikácie\n")
     pass
 
 
@@ -697,15 +705,17 @@ def print_tcp_communications(my_communications):
 def main():
 
     # odchytenie vystupu do variable
-    origOutput = sys.stdout
+    output_printer = sys.stdout
+    output_file = open("vystup.txt", 'w')
 
-    pcap_file_for_use = useFiles()
+    pcap_file_for_use = useFiles( output_printer, output_file)
 
     # main loop
     global ip_counter
     while pcap_file_for_use != None:
 
         print("Actual file: " + pcap_file_for_use + "\n")
+        sys.stdout = output_file
 
         # open and read the pcap file
         ramce = None
@@ -735,6 +745,7 @@ def main():
         print(f"{ip_counter.most_common(1)[0][0]}\t{ip_counter.most_common(1)[0][1]} paketov \n")
         reset_counter()
 
+        sys.stdout = output_printer
         print("Aké rámce si praješ vypísať? \n" +
               "1. ARP\n" +
               "2. ICMP\n" +
@@ -748,7 +759,7 @@ def main():
 
               "9. TFTP\n" +
               "e žiadne\n")
-
+        sys.stdout = output_file
         user_input = input()
 
         if (user_input == "e"):
@@ -785,7 +796,9 @@ def main():
                 print_tftp_communication()
 
         except ValueError:
+            sys.stdout = output_printer
             print("The input was not a valid integer")
+            sys.stdout = output_file
 
         arp_ramce.clear()
         icmp_ramce.clear()
@@ -797,7 +810,7 @@ def main():
         ftp_data_ramce.clear()
         tftp_ramce.clear()
 
-        pcap_file_for_use = useFiles()
+        pcap_file_for_use = useFiles(output_printer, output_file)
 
 def reset_counter():
     global ip_counter
