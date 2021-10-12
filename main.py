@@ -100,6 +100,7 @@ def useFiles( output_printer, output_file):
         print(f"{i}: {line}", end="")
 
     while True:
+        sys.stdout = output_printer
         print("Pre ukoncenie programu napis: e")
         print("Pre vlastnu cestu k suboru zadaj: 0")
         print(f"Pre vyber cisla suboru od 1 do {len(pcap_files_paths)}(vratane)")
@@ -113,22 +114,27 @@ def useFiles( output_printer, output_file):
             print("Exit..")
             exit()
 
-        try: # sem este treba osetrit trycache
+        sys.stdout = output_printer
+        try:
             user_input = int(user_input)
         except ValueError:
             print("The input was not a valid integer")
             main()
 
+
         if (user_input == 0):
+
             print("Zadaj relativnu cestu k suboru: ")
             user_path = input()
             return os.path.join(os.path.dirname(__file__), user_path)
 
         elif (user_input > 0 and user_input <= len(pcap_files_paths)):
+            sys.stdout = output_file
             return os.path.join(os.path.dirname(__file__), (pcap_files_paths[user_input - 1])[:-1])
 
-        print("Zly vstup, zadaj znova..")
 
+        print("Zly vstup, zadaj znova..")
+        sys.stdout = output_file
 
 '''
 ***** Funkcie pre analýzu a rozbor komunikácie *****
@@ -722,6 +728,7 @@ def main():
         try:
             ramce = rdpcap(pcap_file_for_use)
         except Exception as err:
+            sys.stdout = output_printer
             print(err)
             print()
             main()
