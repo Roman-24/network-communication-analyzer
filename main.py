@@ -147,7 +147,8 @@ def search_protocol_name(my_value):
         return None
 
 def analyze_bajty(ramec):
-    return raw(ramec)
+    raw_ramec = raw(ramec)
+    return raw(raw_ramec)
 
 def ramec_len(raw_ramec):
 
