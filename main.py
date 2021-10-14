@@ -17,6 +17,9 @@ from collections import Counter
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
 PROTOCOLS_LIST = "protocols.txt"
 
+'''
+funkcia nacita externy subor obsahuju prokoly a hodnoty a vytvori zneho slovnik
+'''
 def creat_protocols_dict():
 
     protocols_dict = {} # create a Dictionary
@@ -132,23 +135,15 @@ def useFiles( output_printer, output_file):
             sys.stdout = output_file
             return os.path.join(os.path.dirname(__file__), (pcap_files_paths[user_input - 1])[:-1])
 
-
         print("Zly vstup, zadaj znova..")
         sys.stdout = output_file
 
 '''
 ***** Funkcie pre analýzu a rozbor komunikácie *****
 '''
-# najdenie key podla value
-def search_protocol_name(my_value):
-    try:
-        return [key for key, value in protocols_dict.items() if value == my_value]
-    except Exception:
-        return None
 
 def analyze_bajty(ramec):
-    raw_ramec = raw(ramec)
-    return raw(raw_ramec)
+    return raw(ramec)
 
 def ramec_len(raw_ramec):
 
@@ -170,19 +165,6 @@ def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
 def analyze_ramec_type(raw_ramec):
 
     global ETH2
-    # kontrolny vypisok
-    '''
-    print("Typ rámca: ", end="")
-    if raw_ramec[12] < 0x06:
-        if raw_ramec[14] == 0xFF:
-            print("Novell 802.3 RAW")
-        elif raw_ramec[14] == 0xAA:
-            print("IEEE 802.3 LLC + SNAP")
-        else:
-            print("IEEE 802.3 LLC")
-    else:
-        print("Ethernet II")
-    '''
 
     if raw_ramec[12] < 0x06:
         ramec_type = protocols_dict.get(("frameType", raw_ramec[14]), "IEEE 802.3 LLC")
@@ -248,51 +230,10 @@ def find_IP(raw_ramec):
     return source_ip, destination_ip
 
 
-# vypisky k ulohe 3
-def ramec_info3(ramec, ramec_number):
-
-    mess_info = f"rámec: {ramec_number}"
-    raw_ramec = analyze_bajty(ramec)
-
-    len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
-    mess_info += print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4) + "\n"
-
-    ramec_type = analyze_ramec_type(raw_ramec)
-    mess = "Typ rámca: " + ramec_type + "\n"
-
-    source_mac, target_mac = MAC_address(raw_ramec)
-    mess_info += print_MAC_address(source_mac, target_mac) + "\n"
-
-    # vnoreny protokol
-    protocol = find_nested_protocol(raw_ramec, ramec_type)
-    mess_info += protocol + "\n"
-
-    # IPcky
-    # zoznam IP adries vsetkych odosielajucich uzlov
-    global ip_counter
-    if protocol == "TCP" or protocol == "IPv4":
-        source_ip, destination_ip = find_IP(raw_ramec)
-
-        # ip counter
-        if protocol == "IPv4":
-            if ip_counter[source_ip] == 0:
-                ip_counter[source_ip] = 1
-            elif ip_counter[source_ip] > 0:
-                ip_counter[source_ip] += 1
-
-        mess_info += f"zdrojová IP adresa: {source_ip}" + "\n"
-        mess_info += f"cieľová IP adresa: {destination_ip}"
-
-    print(mess_info)
-    # hexdump(raw_ramec)
-    print("\n", end="")
-    pass
-
 # pomocne funkcie k ulohe 4
 def find_next_protocol(raw_ramec, ramec_type, protocol):
 
     # zistujem co je v IP alebo co je v ARP
-
     eth_2 = False
     next_protocol = None
 
