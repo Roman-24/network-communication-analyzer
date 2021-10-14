@@ -393,7 +393,7 @@ def print_tftp_communication():
             for ramec in tftp_ramce:
                 if ramec[1] in temp_ports or ramec[2] in temp_ports:
                     print(ramec[3])
-                    hexdump(ramec[4])
+                    print_ramec(ramec[4])
                     print()
                     tftp_ramce.remove(ramec)
                     pass
@@ -499,7 +499,7 @@ def print_ARP_communications(communications):
                     mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
                     mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"]
                     print(mess)
-                    hexdump(my_ramec)
+                    print_ramec(my_ramec)
                     print()
                 index += 1
 
@@ -518,7 +518,7 @@ def print_ARP_communications(communications):
                     mess_late += "Zdrojová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
                     mess_late += "Cieľová MAC adresa: " + communication[0]["source_hardware_address"]
                     print(mess_late)
-                    hexdump(my_ramec)
+                    print_ramec(my_ramec)
                     print()
                 index += 1
 
@@ -614,7 +614,7 @@ def ramec_info4(ramec, ramec_number):
         if next_protocol == "ICMP":
             # Echo request, Echo reply, a pod.
             icmp_ramce.append(mess_info)
-            mess_info += analyze_ICMP(raw_ramec) + "\n"
+            mess_info += analyze_ICMP(raw_ramec)
             pass
         elif next_protocol == "TCP":
             # hladaj dalej
@@ -622,17 +622,17 @@ def ramec_info4(ramec, ramec_number):
 
             tcp_flags = analyze_flags(raw_ramec)
 
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, tcp_flags) + "\n"
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, tcp_flags)
             pass
         elif next_protocol == "UDP":
             # hladaj dalej
             # TFTP
-            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, None) + "\n"
+            mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, None)
             pass
 
     print(mess_info)
-    # hexdump(raw_ramec)
-    # print("\n", end="")
+    print_ramec(raw_ramec)
+    print("\n", end="")
     pass
 
 def print_communication_list(communication):
@@ -764,6 +764,22 @@ def main():
 def reset_counter():
     global ip_counter
     ip_counter = Counter()
+
+def print_ramec(raw_ramec):
+    raw_ramec = raw_ramec.hex()
+    n = 0
+    for iter in range(len(raw_ramec)):
+        n += 1
+        if n % 32 == 0:
+            print(raw_ramec[iter])
+        else:
+            if n % 16 == 0:
+                print(raw_ramec[iter], end="  ")
+            elif n % 2 == 0:
+                print(raw_ramec[iter], end=" ")
+            else:
+                print(raw_ramec[iter], end="")
+    print()
 
 if __name__ == '__main__':
     print('** PyCharm starting.. **')
