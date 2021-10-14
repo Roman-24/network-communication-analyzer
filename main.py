@@ -198,11 +198,11 @@ def find_nested_protocol(raw_ramec, ramec_type):
 
     elif ramec_type == "IEEE 802.3 LLC + SNAP":
         SNAP = True
-        num2021 = 256 * raw_ramec[20] + raw_ramec[21]
+        temp_decimal_value = 256 * raw_ramec[20] + raw_ramec[21]
         try:
-            nested_protocol = protocols_dict['Ethertypes', num2021]
+            nested_protocol = protocols_dict['Ethertypes', temp_decimal_value]
         except KeyError:
-            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num2021)
+            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(temp_decimal_value)
 
     elif ramec_type == "IEEE 802.3 LLC":
         LLC = True
@@ -215,11 +215,11 @@ def find_nested_protocol(raw_ramec, ramec_type):
 
     # Ethernet II
     else:
-        num1213 = 256 * raw_ramec[12] + raw_ramec[13]
+        temp_decimal_value = 256 * raw_ramec[12] + raw_ramec[13]
         try:
-            nested_protocol = protocols_dict['Ethertypes', num1213]
+            nested_protocol = protocols_dict['Ethertypes', temp_decimal_value]
         except KeyError:
-            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(num1213)
+            nested_protocol = "Neznámy Ethertype 0x{:04x}".format(temp_decimal_value)
 
     return nested_protocol
 
@@ -243,17 +243,17 @@ def find_next_protocol(raw_ramec, ramec_type, protocol):
     # ak mam ethernet 2 tak dalej hladam ARP alebo IPv4
     if eth_2:
 
-        num1213 = 256 * raw_ramec[12] + raw_ramec[13]
+        temp_decimal_value = 256 * raw_ramec[12] + raw_ramec[13]
 
         try:
-            if protocols_dict['Ethertypes', num1213] == "ARP":
+            if protocols_dict['Ethertypes', temp_decimal_value] == "ARP":
                 try:
                     next_protocol = protocols_dict['ARP', raw_ramec[21]]
                 except KeyError:
                     next_protocol = f"Neznáma ARP operácia {raw_ramec[21]}\n"
 
             # v IPv4 hladam dalej TCP, UDP, ICMP
-            if protocols_dict['Ethertypes', num1213] == "IPv4":
+            if protocols_dict['Ethertypes', temp_decimal_value] == "IPv4":
                 IPv4 = True
 
                 try:
