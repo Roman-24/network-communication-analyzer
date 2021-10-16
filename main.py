@@ -617,8 +617,8 @@ def ramec_info4(ramec, ramec_number):
 
             if next_protocol == "ICMP":
                 # Echo request, Echo reply, a pod.
-                icmp_ramce.append(mess_info)
                 mess_info += analyze_ICMP(raw_ramec)
+                icmp_ramce.append(mess_info)
                 pass
             elif next_protocol == "TCP":
                 # hladaj dalej
@@ -640,6 +640,7 @@ def ramec_info4(ramec, ramec_number):
     pass
 
 def print_communication_list(communication):
+    print("***** Výpis ICMP *****\n")
     for i in communication:
         print(i + "\n")
     pass
@@ -647,6 +648,8 @@ def print_communication_list(communication):
 
 
 def print_tcp_communications(my_communications):
+
+    print(my_communications)
 
     print("***** Komunikacia kompletna *****")
 
