@@ -674,31 +674,66 @@ def print_tcp_communications(my_communications):
 
     # najst zaciatok komunikacie
 
-    search_in_progress = False
+    search_in_progress = 0
+    start = True
+    info = ""
+    result = ""
 
+    com_for_scan = None
     for com in my_communications:
 
+        # START ??
         # handshake start
-        if "SYN" in com[0][1]["flags"] and not search_in_progress:
-            search_in_progress = True
-            pass
+        if "SYN" in com[0][1]["flags"] and search_in_progress == 0:
+            search_in_progress = 1
+            continue
 
         # handshake start check
-        if "SYN" in com[1]["flags"] and "ACK" in com[1]["flags"] and not search_in_progress:
-            
-            pass
-        # existuje zaciatok ? existuje koniec ?
+        if "SYN" in com[0][1]["flags"] and "ACK" in com[0][1]["flags"] and search_in_progress == 1:
+            search_in_progress = 2
+            continue
 
-        # nasla sa kompletna komunikacia
+        # handshake start done
+        if "ACK" in com[0][1]["flags"] and search_in_progress == 2:
+            search_in_progress = 3
+            com_for_scan = com
+            break
+
+
+        # existuje zaciatok ? existuje koniec ?
+        if search_in_progress == 3:
+
+            # END ??
+            # RST
+            for index in com:
+                # RST
+                if "RST" in com[1]["flags"] and not end:
+                    end = True
+
+                # FIN z jednej strany
+                if "FIN" in com[1]["flags"] and not end:
+                    info = "end2"
+
+            # FIN obe strany
+
+                # obe strany FIN a chcem ACK potvrdenie
+
+            # jedna strana FIN a druhá RST
+                if  end and info == "end2":
+                    result = "FINRST"
+
+            # nasla sa kompletna komunikacia
+        elif result != "" and search_in_progress == 3:
+            print("***** Komunikacia kompletna *****")
+
+        elif search_in_progress == 3:
+            print("***** Komunikacia nekompletna *****")
 
         # neexistuje zaciatok nehladaj koniec
+        else:
+            continue
 
     # nasla sa kompletna alebo nekompletna komunikacia
-
-
-    print("***** Komunikacia kompletna *****")
-
-    print("***** Komunikacia nekompletna *****")
 
     pass
 
