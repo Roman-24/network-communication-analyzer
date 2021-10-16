@@ -646,10 +646,55 @@ def print_communication_list(communication):
     pass
 
 
+def parse_tcp_communications(ramce):
+
+    my_communications = []
+    new = True
+
+    for ramec in ramce:
+
+        for com in my_communications:
+
+            if com[0][1]["source_ip"] == ramec[1]["target_ip"] and com[0][1]["source_port"] == ramec[1]["target_port"]:
+                com.append(ramec)
+                new = False
+                break
+            else:
+                new = True
+
+        if new:
+            my_communications.append([ramec])
+
+    return my_communications
 
 def print_tcp_communications(my_communications):
 
-    print(my_communications)
+    # najdi komunikaciu
+    my_communications = parse_tcp_communications(my_communications)
+
+    # najst zaciatok komunikacie
+
+    search_in_progress = False
+
+    for com in my_communications:
+
+        # handshake start
+        if "SYN" in com[0][1]["flags"] and not search_in_progress:
+            search_in_progress = True
+            pass
+
+        # handshake start check
+        if "SYN" in com[1]["flags"] and "ACK" in com[1]["flags"] and not search_in_progress:
+            
+            pass
+        # existuje zaciatok ? existuje koniec ?
+
+        # nasla sa kompletna komunikacia
+
+        # neexistuje zaciatok nehladaj koniec
+
+    # nasla sa kompletna alebo nekompletna komunikacia
+
 
     print("***** Komunikacia kompletna *****")
 
