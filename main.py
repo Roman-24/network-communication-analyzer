@@ -264,7 +264,7 @@ def find_next_protocol(raw_ramec, ramec_type, protocol):
                 except KeyError:
                     next_protocol = f"Neznamy IP protokol {raw_ramec[23]}"
         except Exception as err:
-            next_protocol = err
+            next_protocol = ""
 
     return str(next_protocol)
 
@@ -312,12 +312,12 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
 
         try:
             temp_str = "TCP" if TCP else "UDP"
-            next_next_protocol = protocols_dict[temp_str, protocol_by_port]
+            next_next_protocol = protocols_dict.get((temp_str, protocol_by_port), "Neznámy port pre určenie protokolu")
             mess += next_next_protocol + "\n"
             mess += f"zdrojový port: {source_port}" + "\n"
             mess += f"cieľový port: {destination_port}"
-        except KeyError:
-            mess += "Neznámy port pre určenie protokolu"
+        except KeyError as err:
+            print(err)
 
         if UDP:
             analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port)
