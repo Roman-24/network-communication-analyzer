@@ -322,7 +322,7 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
 
         if UDP:
             analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port)
-            tftp_ramce.append([ ramec_number, source_port, destination_port, mess, raw_ramec])
+            tftp_ramce.append([ramec_number, source_port, destination_port, mess, raw_ramec, next_protocol])
             pass
 
         if next_next_protocol != None:
@@ -365,21 +365,20 @@ def analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port):
 
     sixnine = int("0x45", 16)
     global tftp_ports
+    global tftp_ramce
     porty = [source_port, destination_port]
-    porty.sort()
 
     if destination_port == sixnine:
         tftp_ports.append(porty)
     else:
         for item in tftp_ports:
             if item != None:
-                if destination_port in item:
-                    if not source_port in item:
+                if destination_port in item and source_port in item:
                         if destination_port == item[0] and item[1] == sixnine:
                             item[1] = source_port
                         elif item[0] == sixnine:
                             item[0] = source_port
-                        item.sort()
+
 
     pass
 
@@ -392,15 +391,17 @@ def print_tftp_communication():
     if len(tftp_ports) > 0:
         for temp_ports in tftp_ports:
 
-            print("Komunikácia č. ", count)
+            # print("Komunikácia č. ", count)
+            print("Komunikácia TFTP")
             # tftp_ramce -> [ ramec_number, source_port, destination_port, mess, raw_ramec ]
             for ramec in tftp_ramce:
                 if ramec[1] in temp_ports or ramec[2] in temp_ports:
-                    print(ramec[3])
-                    print_ramec(ramec[4])
-                    print()
-                    tftp_ramce.remove(ramec)
-                    pass
+                    if ramec[5] == "UDP":
+                        print(ramec[3])
+                        print_ramec(ramec[4])
+                        print()
+                        # tftp_ramce.remove(ramec)
+                        pass
 
             count += 1
     else:
@@ -436,7 +437,9 @@ def analyze_ARP():
 
             # request
             # ak je to request tak hladam v one_communication ci som nemal nieco co davalo odpoved
-            if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
+            if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] \
+                    and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] \
+                    and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
                     iterator_com[1].append(arp_ramec["ramec_number"])
                     iterator_com[2].append(1)
                     flag_new = False
@@ -444,7 +447,9 @@ def analyze_ARP():
                     pass
 
             # reply
-            elif arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] and arp_ramec["target_hardware_address"] == iterator_com[0]["source_hardware_address"]:
+            elif arp_ramec["operation"] == 2 and arp_ramec["source_protocol_address"] == iterator_com[0]["target_protocol_address"] \
+                    and arp_ramec["target_protocol_address"] == iterator_com[0]["source_protocol_address"] \
+                    and arp_ramec["target_hardware_address"] == iterator_com[0]["source_hardware_address"]:
                     iterator_com[1].append(arp_ramec["ramec_number"])
                     iterator_com[2].append(2)
                     flag_new = False
@@ -495,16 +500,16 @@ def print_ARP_communications(communications):
                         if i_temp["ramec_number"] == communication[1][index]:
                             my_ramec = i_temp["raw_ramec"]
 
-                    mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
-                    mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
-                    mess += "rámec " + str(communication[1][index]) + "\n"
-                    mess += communication[0]["ramec_type"] + "\n"
-                    mess += communication[0]["protocol"] + "\n"
-                    mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
-                    mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"]
-                    print(mess)
-                    print_ramec(my_ramec)
-                    print()
+                            mess = "ARP-request," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: ???" + "\n"
+                            mess += "Zdrojová IP: " + communication[0]["source_protocol_address"] + ", Cieľová IP: " + communication[0]["target_protocol_address"] + "\n"
+                            mess += "rámec " + str(communication[1][index]) + "\n"
+                            mess += communication[0]["ramec_type"] + "\n"
+                            mess += communication[0]["protocol"] + "\n"
+                            mess += "Zdrojová MAC adresa: " + communication[0]["source_hardware_address"] + "\n"
+                            mess += "Cieľová MAC adresa: " + communication[0]["target_hardware_address"]
+                            print(mess)
+                            print_ramec(my_ramec)
+                            print()
                 index += 1
 
             index = 0
@@ -514,16 +519,16 @@ def print_ARP_communications(communications):
                         if i_temp["ramec_number"] == communication[1][index]:
                             my_ramec = i_temp["raw_ramec"]
 
-                    mess_late = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
-                    mess_late += "Zdrojová IP: " + communication[0]["target_protocol_address"] + ", Cieľová IP: " + communication[0]["source_protocol_address"] + "\n"
-                    mess_late += "rámec " + str(communication[1][index]) + "\n"
-                    mess_late += communication[0]["ramec_type"] + "\n"
-                    mess_late += communication[0]["protocol"] + "\n"
-                    mess_late += "Zdrojová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
-                    mess_late += "Cieľová MAC adresa: " + communication[0]["source_hardware_address"]
-                    print(mess_late)
-                    print_ramec(my_ramec)
-                    print()
+                            mess_late = "ARP-reply," + "IP adresa: " + communication[0]["target_protocol_address"] + ", MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+                            mess_late += "Zdrojová IP: " + communication[0]["target_protocol_address"] + ", Cieľová IP: " + communication[0]["source_protocol_address"] + "\n"
+                            mess_late += "rámec " + str(communication[1][index]) + "\n"
+                            mess_late += communication[0]["ramec_type"] + "\n"
+                            mess_late += communication[0]["protocol"] + "\n"
+                            mess_late += "Zdrojová MAC adresa: " + communication[0]["target_hardware_address"] + "\n"
+                            mess_late += "Cieľová MAC adresa: " + communication[0]["source_hardware_address"]
+                            print(mess_late)
+                            print_ramec(my_ramec)
+                            print()
                 index += 1
 
             count += 1
@@ -621,7 +626,7 @@ def ramec_info4(ramec, ramec_number):
             if next_protocol == "ICMP":
                 # Echo request, Echo reply, a pod.
                 mess_info += analyze_ICMP(raw_ramec)
-                icmp_ramce.append(mess_info)
+                icmp_ramce.append([mess_info, raw_ramec])
                 pass
             elif next_protocol == "TCP":
                 # hladaj dalej
@@ -642,14 +647,49 @@ def ramec_info4(ramec, ramec_number):
     print("\n", end="")
     pass
 
-def print_communication_list(communication):
+def print_communication_list(icmp_ramce):
+
+    my_communications = []
+    new = True
+
+    for ramec in icmp_ramce:
+
+        source_mac, target_mac = MAC_address(ramec[1])
+        source_ip, destination_ip = find_IP(ramec[1])
+        type_icmp = analyze_ICMP(ramec[1])
+
+        ramec.append(source_mac) # 2
+        ramec.append(target_mac) # 3
+        ramec.append(source_ip) # 4
+        ramec.append(destination_ip) # 5
+        ramec.append(type_icmp) # 6
+
+        for com in my_communications:
+
+            for index in range(len(com)):
+                if com[index][4] == ramec[5] and com[index][2] == ramec[3]:
+                    com.append(ramec)
+                    new = False
+                    break
+                else:
+                    new = True
+
+        if new:
+            my_communications.append([ramec])
+
+
+    count = 1
     print("***** Výpis ICMP *****\n")
 
-    if len(communication) == 0:
+    if len(my_communications) == 0:
         print("Žiadne ICMP komunikácie\n")
     else:
-        for i in communication:
-            print(i + "\n")
+        for com in my_communications:
+            print("Komunikácia č. ", count)
+            print()
+            for i in com:
+                print(i[0] + "\n")
+            count += 1
 
 def parse_tcp_communications(ramce):
 
@@ -689,63 +729,67 @@ def print_tcp_communications(my_communications):
     com_for_scan = None
     for com in my_communications:
 
-        # START ??
-        # handshake start
-        if "SYN" in com[0][1]["flags"] and search_in_progress == 0:
-            search_in_progress = 1
-            continue
+        for i in range(len(com)):
+            # START ??
+            # handshake start
+            if "SYN" in com[i][1]["flags"] and search_in_progress == 0:
+                search_in_progress = 1
+                continue
 
-        # handshake start check
-        if "SYN" in com[0][1]["flags"] and "ACK" in com[0][1]["flags"] and search_in_progress == 1:
-            search_in_progress = 2
-            continue
+            # handshake start check
+            if "SYN" in com[i][1]["flags"] and "ACK" in com[0][1]["flags"] and search_in_progress == 1:
+                search_in_progress = 2
+                continue
 
-        # handshake start done
-        if "ACK" in com[0][1]["flags"] and search_in_progress == 2:
-            search_in_progress = 3
-            com_for_scan = com
-            break
+            # handshake start done
+            if "ACK" in com[i][1]["flags"] and search_in_progress == 2:
+                search_in_progress = 3
+                com_for_scan = com
+                break
 
-        if "FIN" in com[0][1]["flags"]:
-            result = "Nope"
+            if "FIN" in com[i][1]["flags"]:
+                result = "Nope"
 
-        end = False
-        # existuje zaciatok ? existuje koniec ?
-        if search_in_progress == 3:
+            end = False
+            # existuje zaciatok ? existuje koniec ?
+            if search_in_progress == 3:
 
-            # END ??
-            # RST
-            for index in com:
+                # END ??
                 # RST
-                if "RST" in com[0][1]["flags"] and not end:
-                    end = True
+                for i in com:
+                    # RST
+                    if "RST" in com[i][1]["flags"] and not end:
+                        end = True
 
-                # FIN z jednej strany
-                if "FIN" in com[0][1]["flags"] and not end:
-                    info = "end2"
+                    # FIN z jednej strany
+                    if "FIN" in com[i][1]["flags"] and not end:
+                        info = "end2"
 
-            # FIN obe strany
+                    # FIN obe strany
 
-                # obe strany FIN a chcem ACK potvrdenie
+                    # obe strany FIN a chcem ACK potvrdenie
 
-            # jedna strana FIN a druhá RST
-                if end and info == "end2":
-                    result = "FINRST"
+                    # jedna strana FIN a druhá RST
+                    if end or info == "end2":
+                        result = "FINRST"
 
-        # nasla sa kompletna alebo nekompletna komunikacia
-        if result != "" and search_in_progress == 3 and not kompletna_was_print:
-            kompletna_was_print = True
-            print("***** Komunikacia kompletna *****")
-            for frame in com:
-                print(frame[2])
-            print()
-
-        if result == "Nope" and search_in_progress == 3 and not nekompletna_was_print:
-            nekompletna_was_print = True
-            print("***** Komunikacia nekompletna *****")
-            for frame in com:
-                print(frame[2])
-            print()
+            # nasla sa kompletna alebo nekompletna komunikacia
+            if (result != "" and search_in_progress == 3) or end or result == "FINRST" and not kompletna_was_print:
+                kompletna_was_print = True
+                print("***** Komunikacia kompletna *****")
+                for frame in com:
+                    print(frame[2])
+                    print(frame[1]["flags"])
+                    print()
+            if result == "Nope" and not nekompletna_was_print:
+                nekompletna_was_print = True
+                print("***** Komunikacia nekompletna *****")
+                if len(com) > 20:
+                    com = com[0:10] + com[len(com)-10:len(com)]
+                for frame in com:
+                    print(frame[2])
+                    print(frame[1]["flags"])
+                    print()
 
     pass
 
