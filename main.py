@@ -1,12 +1,13 @@
 
-import os
-import sys
-import collections
-import datetime
-import csv
-import requests
+# import os
+# import sys
+# import collections
+# import datetime
+# import csv
+
+# import requests
 from scapy.all import *
-import random
+# import random
 from collections import Counter
 # pip install numpy
 # pip install pandas
@@ -531,8 +532,7 @@ def print_ARP_communications(communications):
 
 def analyze_flags(raw_ramec):
 
-    info = []
-
+    '''
     ack = int(raw_ramec[42:46].hex(), 16)
     sn = int(raw_ramec[38:42].hex(), 16)
 
@@ -540,9 +540,13 @@ def analyze_flags(raw_ramec):
     # IP_total_length - IP_header_length - TCP_header_length
     length = int(raw_ramec_temp[16 * 2:18 * 2], 16) - int(raw_ramec_temp[(14 * 2) + 1:15 * 2], 16) * 4 - int(raw_ramec_temp[46 * 2:(47 * 2) - 1], 16) * 4
 
+    info = []
     info.append(ack)
     info.append(sn)
     info.append(length)
+    '''
+
+    flags = []
 
     #flags decimalne
     FIN = 1
@@ -551,7 +555,6 @@ def analyze_flags(raw_ramec):
     PSH = 8
     ACK = 16
 
-    flags = []
     flag = int(raw_ramec[46+1:48].hex(), 16)
 
     if flag & ACK:
@@ -641,10 +644,12 @@ def ramec_info4(ramec, ramec_number):
 
 def print_communication_list(communication):
     print("***** Výpis ICMP *****\n")
-    for i in communication:
-        print(i + "\n")
-    pass
 
+    if len(communication) == 0:
+        print("Žiadne ICMP komunikácie\n")
+    else:
+        for i in communication:
+            print(i + "\n")
 
 def parse_tcp_communications(ramce):
 
@@ -669,6 +674,8 @@ def parse_tcp_communications(ramce):
 
 def print_tcp_communications(my_communications):
 
+    kompletna_was_print = False
+    nekompletna_was_print = False
     # najdi komunikaciu
     my_communications = parse_tcp_communications(my_communications)
 
@@ -699,7 +706,10 @@ def print_tcp_communications(my_communications):
             com_for_scan = com
             break
 
+        if "FIN" in com[0][1]["flags"]:
+            result = "Nope"
 
+        end = False
         # existuje zaciatok ? existuje koniec ?
         if search_in_progress == 3:
 
@@ -707,11 +717,11 @@ def print_tcp_communications(my_communications):
             # RST
             for index in com:
                 # RST
-                if "RST" in com[1]["flags"] and not end:
+                if "RST" in com[0][1]["flags"] and not end:
                     end = True
 
                 # FIN z jednej strany
-                if "FIN" in com[1]["flags"] and not end:
+                if "FIN" in com[0][1]["flags"] and not end:
                     info = "end2"
 
             # FIN obe strany
@@ -719,21 +729,23 @@ def print_tcp_communications(my_communications):
                 # obe strany FIN a chcem ACK potvrdenie
 
             # jedna strana FIN a druhá RST
-                if  end and info == "end2":
+                if end and info == "end2":
                     result = "FINRST"
 
-            # nasla sa kompletna komunikacia
-        elif result != "" and search_in_progress == 3:
+        # nasla sa kompletna alebo nekompletna komunikacia
+        if result != "" and search_in_progress == 3 and not kompletna_was_print:
+            kompletna_was_print = True
             print("***** Komunikacia kompletna *****")
+            for frame in com:
+                print(frame[2])
+            print()
 
-        elif search_in_progress == 3:
+        if result == "Nope" and search_in_progress == 3 and not nekompletna_was_print:
+            nekompletna_was_print = True
             print("***** Komunikacia nekompletna *****")
-
-        # neexistuje zaciatok nehladaj koniec
-        else:
-            continue
-
-    # nasla sa kompletna alebo nekompletna komunikacia
+            for frame in com:
+                print(frame[2])
+            print()
 
     pass
 
