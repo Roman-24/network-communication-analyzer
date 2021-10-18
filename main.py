@@ -535,6 +535,51 @@ def print_ARP_communications(communications):
     pass
 
 
+# print ICMP
+def print_communication_list(icmp_ramce):
+
+    my_communications = []
+    new = True
+
+    for ramec in icmp_ramce:
+
+        source_mac, target_mac = MAC_address(ramec[1])
+        source_ip, destination_ip = find_IP(ramec[1])
+        type_icmp = analyze_ICMP(ramec[1])
+
+        ramec.append(source_mac) # 2
+        ramec.append(target_mac) # 3
+        ramec.append(source_ip) # 4
+        ramec.append(destination_ip) # 5
+        ramec.append(type_icmp) # 6
+
+        for com in my_communications:
+
+            for index in range(len(com)):
+                if com[index][4] == ramec[5] and com[index][2] == ramec[3]:
+                    com.append(ramec)
+                    new = False
+                    break
+                else:
+                    new = True
+
+        if new:
+            my_communications.append([ramec])
+
+    count = 1
+    print("***** Výpis ICMP *****\n")
+
+    if len(my_communications) == 0:
+        print("Žiadne ICMP komunikácie\n")
+    else:
+        for com in my_communications:
+            print("Komunikácia č. ", count)
+            print()
+            for i in com:
+                print(i[0] + "\n")
+            count += 1
+            
+
 def analyze_flags(raw_ramec):
 
     '''
@@ -577,119 +622,6 @@ def analyze_flags(raw_ramec):
 
     return flags
 
-# vypisky k ulohe 4
-def ramec_info4(ramec, ramec_number):
-
-    mess_info = f"rámec: {ramec_number}\n"
-    raw_ramec = analyze_bajty(ramec)
-
-    len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
-    mess_info += print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4) + "\n"
-
-    ramec_type = analyze_ramec_type(raw_ramec)
-    mess_info += "Typ rámca: " + ramec_type + "\n"
-
-    source_mac, target_mac = MAC_address(raw_ramec)
-    mess_info += print_MAC_address(source_mac, target_mac) + "\n"
-
-    # zatial mam toto
-    '''
-    Novell 802.3 RAW
-    IEEE 802.3 LLC + SNAP
-    IEEE 802.3 LLC
-    Ethernet II
-    '''
-    # a v tom idem hladat dalej
-
-    # vnoreny protokol pre Ethernet II
-    protocol = find_nested_protocol(raw_ramec, ramec_type)
-    mess_info += protocol + "\n"
-    # IP (IPv4 alebo IPv6)
-    # ARP
-
-    # analyze ARP, TCP, UDP, ICMP
-    if protocol == "ARP":
-        collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
-
-    if protocol == "IPv4":
-        # alalyze IPv4, IPcky a pocty uzlov
-        mess_info += print_IPv4_addresses(raw_ramec, protocol) + "\n"
-
-    # hlbsia analyza protokolov
-    # moze byt: ICMP, TCP, UDP
-    if ETH2:
-        next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
-        mess_info += next_protocol + "\n"
-
-        if next_protocol != None:
-
-            if next_protocol == "ICMP":
-                # Echo request, Echo reply, a pod.
-                mess_info += analyze_ICMP(raw_ramec)
-                icmp_ramce.append([mess_info, raw_ramec])
-                pass
-            elif next_protocol == "TCP":
-                # hladaj dalej
-                # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
-
-                tcp_flags = analyze_flags(raw_ramec)
-
-                mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, tcp_flags)
-                pass
-            elif next_protocol == "UDP":
-                # hladaj dalej
-                # TFTP
-                mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, None)
-                pass
-
-    print(mess_info)
-    print_ramec(raw_ramec)
-    print("\n", end="")
-    pass
-
-def print_communication_list(icmp_ramce):
-
-    my_communications = []
-    new = True
-
-    for ramec in icmp_ramce:
-
-        source_mac, target_mac = MAC_address(ramec[1])
-        source_ip, destination_ip = find_IP(ramec[1])
-        type_icmp = analyze_ICMP(ramec[1])
-
-        ramec.append(source_mac) # 2
-        ramec.append(target_mac) # 3
-        ramec.append(source_ip) # 4
-        ramec.append(destination_ip) # 5
-        ramec.append(type_icmp) # 6
-
-        for com in my_communications:
-
-            for index in range(len(com)):
-                if com[index][4] == ramec[5] and com[index][2] == ramec[3]:
-                    com.append(ramec)
-                    new = False
-                    break
-                else:
-                    new = True
-
-        if new:
-            my_communications.append([ramec])
-
-
-    count = 1
-    print("***** Výpis ICMP *****\n")
-
-    if len(my_communications) == 0:
-        print("Žiadne ICMP komunikácie\n")
-    else:
-        for com in my_communications:
-            print("Komunikácia č. ", count)
-            print()
-            for i in com:
-                print(i[0] + "\n")
-            count += 1
 
 def parse_tcp_communications(ramce):
 
@@ -792,6 +724,77 @@ def print_tcp_communications(my_communications):
                     print()
 
     pass
+
+# vypisky k ulohe 4
+def ramec_info4(ramec, ramec_number):
+
+    mess_info = f"rámec: {ramec_number}\n"
+    raw_ramec = analyze_bajty(ramec)
+
+    len_of_raw_ramec, len_of_raw_ramec_4 = ramec_len(raw_ramec)
+    mess_info += print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4) + "\n"
+
+    ramec_type = analyze_ramec_type(raw_ramec)
+    mess_info += "Typ rámca: " + ramec_type + "\n"
+
+    source_mac, target_mac = MAC_address(raw_ramec)
+    mess_info += print_MAC_address(source_mac, target_mac) + "\n"
+
+    # zatial mam toto
+    '''
+    Novell 802.3 RAW
+    IEEE 802.3 LLC + SNAP
+    IEEE 802.3 LLC
+    Ethernet II
+    '''
+    # a v tom idem hladat dalej
+
+    # vnoreny protokol pre Ethernet II
+    protocol = find_nested_protocol(raw_ramec, ramec_type)
+    mess_info += protocol + "\n"
+    # IP (IPv4 alebo IPv6)
+    # ARP
+
+    # analyze ARP, TCP, UDP, ICMP
+    if protocol == "ARP":
+        collect_ARP(raw_ramec, ramec_number, ramec_type, protocol)
+
+    if protocol == "IPv4":
+        # alalyze IPv4, IPcky a pocty uzlov
+        mess_info += print_IPv4_addresses(raw_ramec, protocol) + "\n"
+
+    # hlbsia analyza protokolov
+    # moze byt: ICMP, TCP, UDP
+    if ETH2:
+        next_protocol = find_next_protocol(raw_ramec, ramec_type, protocol)
+        mess_info += next_protocol + "\n"
+
+        if next_protocol != None:
+
+            if next_protocol == "ICMP":
+                # Echo request, Echo reply, a pod.
+                mess_info += analyze_ICMP(raw_ramec)
+                icmp_ramce.append([mess_info, raw_ramec])
+                pass
+            elif next_protocol == "TCP":
+                # hladaj dalej
+                # HTTP, HTTPS, TELNET, SSH, FTPr, FTPd
+
+                tcp_flags = analyze_flags(raw_ramec)
+
+                mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, tcp_flags)
+                pass
+            elif next_protocol == "UDP":
+                # hladaj dalej
+                # TFTP
+                mess_info = analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess_info, None)
+                pass
+
+    print(mess_info)
+    print_ramec(raw_ramec)
+    print("\n", end="")
+    pass
+
 
 def main():
 
