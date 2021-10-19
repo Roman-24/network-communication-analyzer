@@ -261,6 +261,15 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
     global TCP
     global UDP
     global ICMP
+    global arp_ramce
+    global icmp_ramce
+    global tftp_ramce
+    global http_ramce
+    global https_ramce
+    global telnet_ramce
+    global ssh_ramce
+    global ftp_control_ramce
+    global ftp_data_ramce
     next_next_protocol = None
 
     if next_protocol == "TCP":
@@ -293,12 +302,12 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
 
         if next_next_protocol != None:
 
-            source_ip, target_ip = find_IP(raw_ramec)
+            source_ip, destination_ip = find_IP(raw_ramec)
             ramec_dict_info = {
                 "source_ip": source_ip,
-                "target_ip": target_ip,
+                "destination_ip": destination_ip,
                 "source_port": source_port,
-                "target_port": destination_port,
+                "destination_port": destination_port,
                 "flags": tcp_flags,
             }
 
@@ -452,6 +461,7 @@ def analyze_ARP():
 
 def print_ARP_communications(communications):
 
+    global arp_ramce
     count = 1
     for communication in communications:
 
@@ -502,8 +512,9 @@ def print_ARP_communications(communications):
 
 
 # print ICMP
-def print_communication_list(icmp_ramce):
+def print_communication_list():
 
+    global icmp_ramce
     my_communications = []
     new = True
 
@@ -548,22 +559,7 @@ def print_communication_list(icmp_ramce):
 
 def analyze_flags(raw_ramec):
 
-    '''
-    ack = int(raw_ramec[42:46].hex(), 16)
-    sn = int(raw_ramec[38:42].hex(), 16)
-
-    raw_ramec_temp = raw_ramec.hex()
-    # IP_total_length - IP_header_length - TCP_header_length
-    length = int(raw_ramec_temp[16 * 2:18 * 2], 16) - int(raw_ramec_temp[(14 * 2) + 1:15 * 2], 16) * 4 - int(raw_ramec_temp[46 * 2:(47 * 2) - 1], 16) * 4
-
-    info = []
-    info.append(ack)
-    info.append(sn)
-    info.append(length)
-    '''
-
     flags = []
-
     #flags decimalne
     FIN = 1
     SYN = 2
@@ -598,10 +594,9 @@ def parse_tcp_communications(ramce):
 
         for com in my_communications:
 
-            if com[0][1]["source_ip"] == ramec[1]["target_ip"] and com[0][1]["source_port"] == ramec[1]["target_port"] and com[0][1]["target_ip"] == ramec[1]["source_ip"] and com[0][1]["target_port"] == ramec[1]["source_port"]:
+            if com[0][1]["source_ip"] == ramec[1]["destination_ip"] and com[0][1]["source_port"] == ramec[1]["destination_port"] and com[0][1]["destination_ip"] == ramec[1]["source_ip"] and com[0][1]["destination_port"] == ramec[1]["source_port"]:
                 com.append(ramec)
                 new = False
-                break
             else:
                 new = True
 
@@ -683,6 +678,8 @@ def print_tcp_communications(my_communications):
 # vypisky k ulohe 4
 def ramec_info4(ramec, ramec_number):
 
+    global icmp_ramce
+
     mess_info = f"rámec: {ramec_number}\n"
     raw_ramec = analyze_bajty(ramec)
 
@@ -761,6 +758,12 @@ def main():
 
     # main loop
     global ip_counter
+    global http_ramce
+    global https_ramce
+    global telnet_ramce
+    global ssh_ramce
+    global ftp_control_ramce
+    global ftp_data_ramce
     while pcap_file_for_use != None:
 
         print("Actual file: " + pcap_file_for_use + "\n")
@@ -827,7 +830,7 @@ def main():
                 else:
                     print("Žiadne ARP komunikácie\n")
             elif user_input == 2:
-                print_communication_list(icmp_ramce)
+                print_communication_list()
 
             elif user_input == 3:
                 print_tcp_communications(http_ramce)
