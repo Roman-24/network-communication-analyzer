@@ -1,18 +1,6 @@
 
-# import os
-# import sys
-# import collections
-# import datetime
-# import csv
-
-# import requests
 from scapy.all import *
-# import random
 from collections import Counter
-# pip install numpy
-# pip install pandas
-# pip install matplotlib
-# pip install requests
 
 # konstanty pre subory
 PCAP_FILES_LIST = "zoznamVstupnychFiles.txt"
@@ -67,15 +55,6 @@ TFTP = False
 arp_ramce = []
 icmp_ramce = []
 tftp_ramce = []
-
-# vzot slovnik na parsovanie komunikacii
-com_info_dict = {
-    "source_ip": None,
-    "target_ip": None,
-    "source_port": None,
-    "target_port": None,
-    "flags": [],
-}
 
 # vsetky_ramce_danej_komunikacie[ poradove cislo, [prislusny ramec, dict_info, mess_info] ]
 http_ramce = []
@@ -164,20 +143,7 @@ def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
     return mess_1 + mess_2
 
 def analyze_ramec_type(raw_ramec):
-
     global ETH2
-
-    '''
-    if item[12] < 0x06:
-        if item[14] == 0xFF:
-            print("Novell 802.3 RAW")
-            elif item[14] == 0xAA:
-                print("IEEE 802.3 LLC + SNAP")
-            else:
-                print("IEEE 802.3 LLC")
-    else:
-        print("Ethernet II")
-    '''
 
     if raw_ramec[12] < 0x06:
         ramec_type = protocols_dict.get(("frameType", raw_ramec[14]), "IEEE 802.3 LLC")
@@ -578,7 +544,7 @@ def print_communication_list(icmp_ramce):
             for i in com:
                 print(i[0] + "\n")
             count += 1
-            
+
 
 def analyze_flags(raw_ramec):
 
@@ -632,7 +598,7 @@ def parse_tcp_communications(ramce):
 
         for com in my_communications:
 
-            if com[0][1]["source_ip"] == ramec[1]["target_ip"] and com[0][1]["source_port"] == ramec[1]["target_port"]:
+            if com[0][1]["source_ip"] == ramec[1]["target_ip"] and com[0][1]["source_port"] == ramec[1]["target_port"] and com[0][1]["target_ip"] == ramec[1]["source_ip"] and com[0][1]["target_port"] == ramec[1]["source_port"]:
                 com.append(ramec)
                 new = False
                 break
@@ -651,16 +617,10 @@ def print_tcp_communications(my_communications):
     # najdi komunikaciu
     my_communications = parse_tcp_communications(my_communications)
 
-    # najst zaciatok komunikacie
-
-    search_in_progress = 0
-    start = True
-    info = ""
-    result = ""
-
-    com_for_scan = None
     for com in my_communications:
 
+        # najst zaciatok komunikacie
+        search_in_progress = 0
         for i in range(len(com)):
             # START ??
             # handshake start
@@ -669,59 +629,54 @@ def print_tcp_communications(my_communications):
                 continue
 
             # handshake start check
-            if "SYN" in com[i][1]["flags"] and "ACK" in com[0][1]["flags"] and search_in_progress == 1:
-                search_in_progress = 2
-                continue
+            if "ACK" in com[i][1]["flags"]:
+                if "SYN" in com[i][1]["flags"]:
+                    if search_in_progress == 1:
+                        search_in_progress = 2
+                        continue
 
             # handshake start done
             if "ACK" in com[i][1]["flags"] and search_in_progress == 2:
                 search_in_progress = 3
-                com_for_scan = com
-                break
-
-            if "FIN" in com[i][1]["flags"]:
-                result = "Nope"
 
             end = False
+            end2 = False
+            end3 = False
+            nekompletna_was = False
             # existuje zaciatok ? existuje koniec ?
             if search_in_progress == 3:
-
-                # END ??
-                # RST
-                for i in com:
-                    # RST
-                    if "RST" in com[i][1]["flags"] and not end:
+                for j in range(len(com)):
+                    if "RST" in com[j][1]["flags"] and not end:
                         end = True
 
-                    # FIN z jednej strany
-                    if "FIN" in com[i][1]["flags"] and not end:
-                        info = "end2"
-
-                    # FIN obe strany
-
-                    # obe strany FIN a chcem ACK potvrdenie
-
-                    # jedna strana FIN a druhá RST
-                    if end or info == "end2":
-                        result = "FINRST"
+                    if "FIN" in com[j][1]["flags"] and not end:
+                        end2 = True
+                        if end2:
+                            end3 = True
+                if not end and not end2 and not end3:
+                    nekompletna_was = True
 
             # nasla sa kompletna alebo nekompletna komunikacia
-            if (result != "" and search_in_progress == 3) or end or result == "FINRST" and not kompletna_was_print:
-                kompletna_was_print = True
-                print("***** Komunikacia kompletna *****")
-                for frame in com:
-                    print(frame[2])
-                    print(frame[1]["flags"])
-                    print()
-            if result == "Nope" and not nekompletna_was_print:
+            if search_in_progress == 3 and not kompletna_was_print:
+                if end or end3:
+                    kompletna_was_print = True
+
+                    print("***** Komunikacia kompletna *****")
+                    for frame in com:
+                        if com.index(frame) < 10 or com.index(frame) > len(com) - 10:
+                            print(frame[2])
+                            print(frame[1]["flags"])
+                            print()
+
+            if search_in_progress == 3 and nekompletna_was and not nekompletna_was_print:
                 nekompletna_was_print = True
+
                 print("***** Komunikacia nekompletna *****")
-                if len(com) > 20:
-                    com = com[0:10] + com[len(com)-10:len(com)]
                 for frame in com:
-                    print(frame[2])
-                    print(frame[1]["flags"])
-                    print()
+                    if com.index(frame) < 10 or com.index(frame) > len(com) - 10:
+                        print(frame[2])
+                        print(frame[1]["flags"])
+                        print()
 
     pass
 
