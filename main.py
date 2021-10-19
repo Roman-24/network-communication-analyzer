@@ -298,7 +298,6 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
         if UDP:
             analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port)
             tftp_ramce.append([ramec_number, source_port, destination_port, mess, raw_ramec, next_protocol])
-            pass
 
         if next_next_protocol != None:
 
@@ -594,11 +593,13 @@ def parse_tcp_communications(ramce):
 
         for com in my_communications:
 
-            if com[0][1]["source_ip"] == ramec[1]["destination_ip"] and com[0][1]["source_port"] == ramec[1]["destination_port"] and com[0][1]["destination_ip"] == ramec[1]["source_ip"] and com[0][1]["destination_port"] == ramec[1]["source_port"]:
-                com.append(ramec)
-                new = False
-            else:
-                new = True
+            for i in range(len(com)):
+                if com[i][1]["source_ip"] == ramec[1]["destination_ip"] and com[i][1]["source_port"] == ramec[1]["destination_port"] and com[i][1]["destination_ip"] == ramec[1]["source_ip"] and com[i][1]["destination_port"] == ramec[1]["source_port"]:
+                    com.append(ramec)
+                    new = False
+                    break
+                else:
+                    new = True
 
         if new:
             my_communications.append([ramec])
@@ -668,7 +669,7 @@ def print_tcp_communications(my_communications):
 
                 print("***** Komunikacia nekompletna *****")
                 for frame in com:
-                    if com.index(frame) < 10 or com.index(frame) > len(com) - 10:
+                    if com.index(frame) < 10 or com.index(frame) >= len(com) - 10:
                         print(frame[2])
                         print(frame[1]["flags"])
                         print()
