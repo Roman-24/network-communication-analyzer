@@ -659,7 +659,7 @@ def print_tcp_communications(my_communications):
 
                     print("***** Komunikacia kompletna *****")
                     for frame in com:
-                        if com.index(frame) < 10 or com.index(frame) > len(com) - 10:
+                        if com.index(frame) < 10 or com.index(frame) >= len(com) - 10:
                             print(frame[2])
                             print(frame[1]["flags"])
                             print()
