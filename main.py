@@ -12,10 +12,14 @@ funkcia nacita externy subor obsahuju prokoly a hodnoty a vytvori zneho slovnik
 def creat_protocols_dict():
 
     protocols_dict = {} # create a Dictionary
+    # context manager na otvorenie suboru
     with open(PROTOCOLS_LIST, 'r') as protocol_file:
+
+        # nacitaj subor po riadkoch
         while True:
             line = protocol_file.readline()
 
+            # skipne nazov kategorie v subore
             if line.startswith("#"):
                 protocol_name = line.split()[0][1:]
             elif not line:
@@ -82,6 +86,7 @@ def useFiles( output_printer, output_file):
     for i, line in enumerate(pcap_files_paths, 1):
         print(f"{i}: {line}", end="")
 
+    # user interface menu
     while True:
         sys.stdout = output_printer
         print("Pre ukoncenie programu napis: e")
@@ -125,6 +130,7 @@ def useFiles( output_printer, output_file):
 def analyze_bajty(ramec):
     return raw(ramec)
 
+# funkcia vyriesi dlzku ramca
 def ramec_len(raw_ramec):
 
     len_of_raw_ramec = len(raw_ramec)
@@ -142,6 +148,7 @@ def print_ramec_len(len_of_raw_ramec, len_of_raw_ramec_4):
     mess_2 = f"dĺžka rámca prenášaného po médiu - {len_of_raw_ramec_4} B"
     return mess_1 + mess_2
 
+# funkcia urci typ ramca
 def analyze_ramec_type(raw_ramec):
     global ETH2
 
@@ -153,6 +160,7 @@ def analyze_ramec_type(raw_ramec):
 
     return ramec_type
 
+# funkcia z ramca vytiahne mac adresy
 def MAC_address(raw_ramec):
     raw_ramec = raw_ramec.hex()
     source_mac = raw_ramec[12:14] + ":" + raw_ramec[14:16] + ":" + raw_ramec[16:18] + ":" + raw_ramec[18:20] + ":" + raw_ramec[20:22] + ":" + raw_ramec[22:24]
@@ -165,22 +173,25 @@ def print_MAC_address(source_mac, target_mac):
     return mess_1 + mess_2
 
 # k ulohe 2
+# funkcia najde protokol na vrstve 3
 def find_nested_protocol(raw_ramec, ramec_type):
     global RAW
     global SNAP
     global LLC
     nested_protocol = ""
 
+    # v raw je v nasom pripade vzdy IPX
     if ramec_type == "Novell 802.3 RAW":
         RAW = True
         nested_protocol = "IPX"
 
+    # analyze SNAP
     elif ramec_type == "IEEE 802.3 LLC + SNAP":
         SNAP = True
         temp_decimal_value = 256 * raw_ramec[20] + raw_ramec[21]
         nested_protocol = protocols_dict.get(('Ethertypes', temp_decimal_value), "Neznámy Ethertype 0x{:04x}".format(temp_decimal_value))
 
-
+    # urci DSAP, SSAP v LLC
     elif ramec_type == "IEEE 802.3 LLC":
         LLC = True
         try:
@@ -190,14 +201,16 @@ def find_nested_protocol(raw_ramec, ramec_type):
         except KeyError:
             nested_protocol = "Neznámy SAP 0x{:02x}".format(raw_ramec[14])
 
-    # Ethernet II
+    # najdi protokol pre typ ramca Ethernet II
     else:
         temp_decimal_value = 256 * raw_ramec[12] + raw_ramec[13]
         nested_protocol = protocols_dict.get(('Ethertypes', temp_decimal_value), "Neznámy Ethertype 0x{:04x}".format(temp_decimal_value))
 
+    # funkcia vrati vnoreny protokol
     return nested_protocol
 
 # potebne k ulohe 3, uloha 3
+# funkcia v packetu analyzuje IP adressy
 def find_IP(raw_ramec):
     source_ip = str(int(raw_ramec[26:27].hex(), 16)) + "." + str(int(raw_ramec[27:28].hex(), 16)) + "." + str(int(raw_ramec[28:29].hex(), 16)) + "." + str(int(raw_ramec[29:30].hex(), 16))
     destination_ip = str(int(raw_ramec[30:31].hex(), 16)) + "." + str(int(raw_ramec[31:32].hex(), 16)) + "." + str(int(raw_ramec[32:33].hex(), 16)) + "." + str(int(raw_ramec[33:34].hex(), 16))
@@ -205,6 +218,7 @@ def find_IP(raw_ramec):
 
 
 # pomocne funkcie k ulohe 4
+# hlada prokotol na vrstve 4
 def find_next_protocol(raw_ramec, ramec_type, protocol):
 
     # zistujem co je v IP alebo co je v ARP
@@ -243,7 +257,7 @@ def print_IPv4_addresses(raw_ramec, protocol):
     if protocol == "TCP" or protocol == "IPv4":
         source_ip, destination_ip = find_IP(raw_ramec)
 
-        # ip counter
+        # ip counter pre vypis uzla s najviac IP podla zadania
         if protocol == "IPv4":
             if ip_counter[source_ip] == 0:
                 ip_counter[source_ip] = 1
@@ -330,11 +344,14 @@ def analyze_next_protocol(raw_ramec, next_protocol, ramec_number, mess, tcp_flag
 
     return mess
 
+
 def analyze_ICMP(raw_ramec):
+    # prevod
     index = 14 + (raw_ramec[14] % 16) * 4
     return protocols_dict.get(("ICMP", raw_ramec[index]), "Nerozpoznaný typ\n")
 
 tftp_ports = []
+# podla prveho portu 69 a dalsi dvoch portov vysklada komunikaciu/e
 def analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port):
 
     sixnine = int("0x45", 16)
@@ -359,7 +376,6 @@ def analyze_TFTP(raw_ramec, ramec_number, source_port, destination_port):
 def print_tftp_communication():
     global tftp_ramce
     global tftp_ports
-    fsadfdssdf = tftp_ramce
     count = 1
     print("***** Výpis TFTP *****\n")
     if len(tftp_ports) > 0:
@@ -382,7 +398,7 @@ def print_tftp_communication():
         print("Žiadne TFTP komunikácie\n")
     pass
 
-
+# zachytava ARP ramce aj s udajmi pre ich nastlednu moznost analyzovat
 def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
     raw_ramec_hex = raw_ramec.hex()
     global arp_ramce
@@ -399,6 +415,7 @@ def collect_ARP(raw_ramec, ramec_number, ramec_type, protocol):
     })
     pass
 
+# poskladanie ARP komunikacie
 def analyze_ARP():
 
     global arp_ramce
@@ -410,7 +427,7 @@ def analyze_ARP():
         for iterator_com in communications:
 
             # request
-            # ak je to request tak hladam v one_communication ci som nemal nieco co davalo odpoved
+            # ak je to request tak hladam v iterator_com ci som nemal nieco co davalo odpoved
             if arp_ramec["operation"] == 1 and arp_ramec["target_protocol_address"] == iterator_com[0]["target_protocol_address"] \
                     and arp_ramec["source_protocol_address"] == iterator_com[0]["source_protocol_address"] \
                     and arp_ramec["source_hardware_address"] == iterator_com[0]["source_hardware_address"]:
@@ -568,22 +585,24 @@ def analyze_flags(raw_ramec):
 
     flag = int(raw_ramec[46+1:48].hex(), 16)
 
+    if flag & SYN:
+        flags.append('SYN')
     if flag & ACK:
         flags.append('ACK')
     if flag & PSH:
         flags.append('PSH')
-    if flag & RST:
-        flags.append('RST')
-    if flag & SYN:
-        flags.append('SYN')
     if flag & FIN:
         flags.append('FIN')
-    if (len(flags) == 0):
+    if flag & RST:
+        flags.append('RST')
+    if 0 == len(flags):
         flags.append('OTHERS')
 
     return flags
 
-
+# poskladanie TCP munikacie pre prislusny protokol
+# vstupom je list obsahujuci ramce jedneho konkretneho TCP protokolu
+# komunikacie sa parsuju podla IP a portov
 def parse_tcp_communications(ramce):
 
     my_communications = []
